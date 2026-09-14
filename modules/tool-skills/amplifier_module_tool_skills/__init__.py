@@ -301,6 +301,7 @@ async def mount(
     # Mount skills visibility hook if enabled
     visibility_config = config.get("visibility", {})
     unregister_visibility = None
+    instruction_lease = None
     if visibility_config.get("enabled", True):  # Default: enabled
         from amplifier_module_tool_skills.hooks import SkillsVisibilityHook
 
@@ -319,6 +320,7 @@ async def mount(
             priority=hook.priority,
             name="skills-visibility",
         )
+        instruction_lease = hook.register_instruction_source()
 
         logger.info(f"Mounted skills visibility hook with {len(tool.skills)} skills")
 
@@ -388,6 +390,13 @@ async def mount(
             except Exception:
                 logger.warning(
                     "Failed to unregister skills-visibility hook during cleanup"
+                )
+        if instruction_lease is not None:
+            try:
+                instruction_lease.close()
+            except Exception:
+                logger.warning(
+                    "Failed to close skills-visibility instruction source during cleanup"
                 )
 
     return cleanup

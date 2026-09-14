@@ -195,7 +195,18 @@ class SkillsVisibilityHook:
         self._prefix_factory: Any = None
         self._prefix_skills_hash: str | None = None
         self._prefix_rendered: str = ""
+        # A content-free unavailable marker for the v1 snapshot callback. The
+        # callback may run after the provider hook error was caught upstream,
+        # so it must distinguish "the catalog is genuinely empty" from "the
+        # current catalog could not be rendered". Do not retain the exception:
+        # it can contain source or skill details that do not belong in context.
+        self._instruction_refresh_failed = False
         self._prefix_unavailable_logged = False
+        # Optional context.instructions.v1 source lease.  The module does not
+        # import context-simple: the capability is a duck-typed integration
+        # boundary, so sessions without that optional module keep their legacy
+        # visibility behavior unchanged.
+        self._instruction_lease: Any = None
 
         logger.debug(
             f"Initialized SkillsVisibilityHook: enabled={self.enabled}, "
@@ -235,6 +246,19 @@ class SkillsVisibilityHook:
             or action="continue" if disabled or no skills available
         """
         if not self.enabled:
+            return HookResult(action="continue")
+
+        # The normal provider hook is the only place where catalog discovery,
+        # overlay resolution, and visibility-frontmatter reads are allowed.
+        # The v1 assembly invokes its source callback in a worker thread, so
+        # that callback can only hand back this immutable rendered snapshot.
+        self._refresh_catalog_render()
+
+        if self._instruction_lease is not None and self._instruction_lease.route == "v1":
+            # A v1 request assembles this source at conversation head.  Do not
+            # also use either legacy request injection or a legacy prefix
+            # wrapper.  The wrapper itself checks the same route because it
+            # may have been installed while the route was pending or legacy.
             return HookResult(action="continue")
 
         if self.placement == "prefix":
@@ -330,6 +354,12 @@ class SkillsVisibilityHook:
 
         async def _skills_prefixed_factory() -> str:
             base = await base_factory()
+            # This wrapper may have been installed before a v1-capable
+            # provider entered its request scope.  Omit only this hook's
+            # legacy block in that scope; preserve the wrapped base factory
+            # and every other hook's content.
+            if self._instruction_lease is not None and self._instruction_lease.route == "v1":
+                return base
             block = self._render_prefix_block()
             return f"{base}\n\n{block}" if block else base
 
@@ -342,38 +372,91 @@ class SkillsVisibilityHook:
         return True
 
     def _render_prefix_block(self) -> str:
-        """Render the skills block for prefix placement, cached by catalog hash.
+        """Return the latest normal-request catalog render for legacy prefix use.
 
-        Re-renders ONLY when the effective skill catalog changes (cheap hash
-        over name/description/flags). A change means the system prompt text
-        changes, which busts the provider's prefix cache once — acceptable,
-        because catalog changes (mode overlays, runtime skill loads) are rare
-        events, and the alternative is a permanently stale index.
+        The system-prompt factory can execute outside the normal provider hook
+        path.  It therefore must not discover skills, resolve overlays, or
+        touch coordinator state.  ``_refresh_catalog_render`` performs that
+        work on the event loop before request preparation.
         """
-        effective = self._effective_skills()
-        catalog_repr = repr(
-            sorted(
-                (
-                    name,
-                    meta.description,
-                    bool(meta.disable_model_invocation),
-                    getattr(meta, "context", None),
+        return self._prefix_rendered
+
+    def _refresh_catalog_render(self) -> None:
+        """Refresh the cached catalog and fail closed when rendering fails.
+
+        The v1 callback can be invoked after this normal provider hook returns
+        (including when its exception is caught by ordinary hook dispatch).
+        Mark its snapshot unavailable before every refresh.  A failed refresh
+        then cannot leave the previous catalog available to a later callback;
+        a concurrent callback also fails rather than returning an empty
+        transient snapshot.
+        """
+        previous_rendered = self._prefix_rendered
+        was_unavailable = self._instruction_refresh_failed
+        self._prefix_rendered = ""
+        self._instruction_refresh_failed = True
+        try:
+            effective = self._effective_skills()
+            catalog_repr = repr(
+                sorted(
+                    (
+                        name,
+                        meta.description,
+                        bool(meta.disable_model_invocation),
+                        getattr(meta, "context", None),
+                        getattr(meta, "visibility", None),
+                    )
+                    for name, meta in (effective or {}).items()
                 )
-                for name, meta in (effective or {}).items()
             )
-        )
-        catalog_hash = hashlib.sha256(catalog_repr.encode()).hexdigest()
-        if catalog_hash != self._prefix_skills_hash:
-            if self._prefix_skills_hash is not None:
+            catalog_hash = hashlib.sha256(catalog_repr.encode()).hexdigest()
+            refresh_needed = (
+                catalog_hash != self._prefix_skills_hash or was_unavailable
+            )
+            if refresh_needed and self._prefix_skills_hash is not None:
                 logger.info(
                     "Skill catalog changed — refreshing skills index in the "
                     "system prompt (one-time prefix cache bust)"
                 )
-            self._prefix_skills_hash = catalog_hash
-            self._prefix_rendered = (
-                self._format_skills_list(effective) if effective else ""
+            rendered = (
+                self._format_skills_list(effective)
+                if refresh_needed and effective
+                else previous_rendered if effective else ""
             )
-        return self._prefix_rendered
+        except Exception:
+            self._instruction_refresh_failed = True
+            raise
+
+        self._prefix_skills_hash = catalog_hash
+        self._prefix_rendered = rendered
+        self._instruction_refresh_failed = False
+
+    def register_instruction_source(self) -> Any:
+        """Register a v1 head source when the optional assembly is mounted.
+
+        This intentionally runs during mount, before any request can prepare.
+        The callback closes only over a rendered string snapshot; it performs
+        no catalog discovery, coordinator lookup, I/O, or asynchronous work.
+        """
+        getter = getattr(self.coordinator, "get_capability", None) if self.coordinator else None
+        assembly = getter("context.instructions.v1") if callable(getter) else None
+        register = getattr(assembly, "register", None)
+        if not callable(register):
+            return None
+        self._instruction_lease = register(
+            "skills-visibility",
+            self._instruction_snapshot,
+        )
+        return self._instruction_lease
+
+    def _instruction_snapshot(self, _scope: dict[str, Any]) -> list[dict[str, str]]:
+        """Return a fresh v1 head record from the event-loop-owned render."""
+        if self._instruction_refresh_failed:
+            raise RuntimeError("Current skills catalog refresh failed; snapshot unavailable.")
+        rendered = self._prefix_rendered
+        if not rendered:
+            return []
+        return [{"key": "catalog", "content": rendered, "placement": "head"}]
 
     def _format_skills_list(self, skills: dict[str, Any] | None = None) -> str:
         """Format skills list as markdown with XML boundaries.

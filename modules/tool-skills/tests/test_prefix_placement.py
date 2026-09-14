@@ -237,6 +237,9 @@ async def test_prefix_mode_refreshes_on_catalog_change(sample_skills):
     )
     del sample_skills["git-workflow"]
 
+    # Catalog discovery and rendering stays on the normal provider hook; the
+    # factory only reads that immutable snapshot.
+    await hook.on_provider_request("provider:request", {})
     after = await context._system_prompt_factory()
     assert "new-mode-skill" in after
     assert "git-workflow" not in after
