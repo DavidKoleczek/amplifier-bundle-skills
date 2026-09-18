@@ -341,10 +341,11 @@ missing.
 Return a compact natural-language report containing source and child session
 IDs, the requested reviewer and model, any configured-default override, the
 configuration scope and its limitations, delegation-reported routing
-preferences and reported LLM calls, findings, and not-covered/uncertain
-evidence. State that actual provider, model, account, and instance execution
-was not independently audited. Never expose internal normalized field names or
-structured helper syntax. Use the retained resolver result for `config_scope`,
+preferences and reported LLM calls, whether the requested pair differs from
+the source's known pair or the same-pair guard could not be evaluated, findings,
+and not-covered/uncertain evidence. State that actual provider, model, account,
+and instance execution was not independently audited. Never expose internal
+normalized field names or structured helper syntax. Use the retained resolver result for `config_scope`,
 `configured_default_model`, and the selected `model`; configuration scope is
 not `provider:resolve.scope` (runtime routing scope). If the selected model
 equals the configured default, say "requested model matches the configured

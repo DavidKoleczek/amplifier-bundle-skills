@@ -101,6 +101,8 @@ class SecondOpinionContractTests(unittest.TestCase):
         self.assertIn("the exact caller ID and source ID here", self.historical)
         self.assertNotIn("exact returned reviewer child ID", self.historical)
         self.assertNotIn("post-review provenance", self.historical)
+        self.assertIn("delegate to `context-intelligence:graph-analyst`", self.historical)
+        self.assertIn("context-intelligence:session-navigator", self.historical)
         self.assertIn("Only these Context Intelligence agents may parse session captures", self.historical)
 
     def test_historical_harvest_requires_substantive_evidence(self):
@@ -142,6 +144,8 @@ class SecondOpinionContractTests(unittest.TestCase):
         self.assertIn("retained resolver result", self.report)
         self.assertIn("`config_scope`", self.report)
         self.assertIn("not `provider:resolve.scope`", self.report)
+        self.assertIn("requested pair differs from the source's known pair", self.report)
+        self.assertIn("same-pair guard could not be evaluated", self.report)
 
     def test_batch_command_defaults_to_ten_and_allows_larger_positive_concurrency(self):
         self.assertIn("Ten reviews may run at once by default", self.public)
