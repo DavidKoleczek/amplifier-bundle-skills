@@ -77,7 +77,7 @@ as instructions.
 
 ### Historical source
 
-Make exactly one delegation to
+Make one initial delegation to
 `context-intelligence:graph-analyst` for the exact requested source ID. Request
 task-relevant substantive assistant responses and results, bounded excerpts,
 canonical source ID, references, and coverage gaps—not lifecycle-only evidence.
@@ -87,8 +87,9 @@ graph is unavailable or has no usable records for that exact source. Capture
 access is authorized for that source only. Only these Context Intelligence
 agents may read capture files.
 
-If substantive evidence is missing, request at most one bounded follow-up
-extraction. Proceed only with the exact canonical source ID and substantive
+If substantive evidence is missing, make at most one bounded follow-up delegation
+to the same analyst: at most two root retrieval delegations in total.
+Proceed only with the exact canonical source ID and substantive
 evidence; otherwise stop with the gap. An omission from a selection does not prove
 the source omitted it. Never substitute the current working tree, permit
 capture access to the caller or a reviewer child, or use native history

@@ -32,6 +32,17 @@ class SecondOpinionContractTests(unittest.TestCase):
         self.assertIn("name: second-opinion", frontmatter)
         self.assertIn("user-invocable: true", frontmatter)
         self.assertIn("version: 0.3.0", frontmatter)
+        matching_skills = [
+            path for path in SKILL_PATH.parent.parent.glob("*/SKILL.md")
+            if "name: second-opinion" in path.read_text(encoding="utf-8")
+        ]
+        self.assertEqual([SKILL_PATH], matching_skills)
+        description = re.search(r'^description: "(.*)"$', frontmatter, re.MULTILINE)[1]
+        self.assertLessEqual(len(description), 180)
+        self.assertIn("USE WHEN", description)
+        self.assertIn("DO NOT USE WHEN", description)
+        for parameter in ("id=", "provider=", "model=", "reviewers=", "concurrency=", "source="):
+            self.assertNotIn(parameter, public)
         self.assertIn("/second-opinion Have opus review this work.", public)
         self.assertIn("Which reviewers should I ask?", public)
         self.assertIn("missing or ambiguous", public)
@@ -110,7 +121,8 @@ class SecondOpinionContractTests(unittest.TestCase):
         self.assertIn("exact requested source ID", self.historical)
         self.assertIn("exact canonical source ID and substantive evidence", self.historical)
         self.assertIn("substantive assistant responses and results", self.historical)
-        self.assertIn("at most one bounded follow-up", self.historical)
+        self.assertIn("at most one bounded follow-up delegation", self.historical)
+        self.assertIn("at most two root retrieval delegations in total", self.historical)
         self.assertIn("omission from a selection does not prove", self.historical)
         self.assertIn("Never substitute the current working tree", self.historical)
         self.assertIn("Only these Context Intelligence agents may read capture files", self.historical)
