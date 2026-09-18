@@ -47,27 +47,45 @@ The `image-vision` skill is a simpler reference skill that loads inline (without
 
 ## Quick Start
 
-### As a standalone bundle
+### Add the reusable behavior to an existing Amplifier host
 
 ```bash
-amplifier bundle add git+https://github.com/microsoft/amplifier-bundle-skills@main
+amplifier bundle add git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml --app
 ```
 
-### Compose into your bundle
+This composes the full skills capability (tool, instructions, and curated
+skills) into the host without selecting this repository's complete root.
+Use `skills-tool.yaml` in the same `behaviors/` directory when the host brings
+its own skill sources.
+
+### Compose the behavior in a bundle
 
 Include the full behavior (tool + curated skills):
 
 ```yaml
 includes:
-  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
 ```
 
 Or include just the tool (no curated skills):
 
 ```yaml
 includes:
-  - bundle: skills:behaviors/skills-tool
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills-tool.yaml
 ```
+
+### Supporting legacy root
+
+This repository also provides a complete, runnable **legacy root** for quick
+experimentation or when you intentionally want its Foundation-based session:
+
+```bash
+amplifier bundle add git+https://github.com/microsoft/amplifier-bundle-skills@main
+amplifier bundle use skills
+```
+
+The root composes `skills:behaviors/skills`; it is not the normal reusable
+capability-install surface.
 
 ### Add your own skills alongside curated ones
 
@@ -89,7 +107,7 @@ tools:
 
 ```
 amplifier-bundle-skills/
-├── bundle.md                     # Root bundle (includes foundation + full behavior)
+├── bundle.md                     # Supporting legacy root (Foundation + full behavior)
 ├── behaviors/
 │   ├── skills.yaml               # Full: tool + instructions + curated skills
 │   └── skills-tool.yaml          # Minimal: just the tool + instructions

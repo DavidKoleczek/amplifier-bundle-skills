@@ -44,7 +44,8 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
 ### Recommended: Include the Behavior
 
-Add skills capability to your bundle by including the behavior:
+Add skills capability to an existing host by including the behavior. The host
+keeps ownership of its base/root and system instruction:
 
 ```yaml
 ---
@@ -54,8 +55,7 @@ bundle:
   description: My custom bundle with skills support
 
 includes:
-  - bundle: git+https://github.com/microsoft/amplifier-foundation@main
-  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#path=behaviors/skills.yaml
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
 ---
 
 # Your bundle instructions...
@@ -72,9 +72,9 @@ includes:
 - Explicit about what capabilities you're adding
 - Gets both tool + hook working together
 
-### Alternative: Standalone Bundle
+### Supporting legacy root
 
-You can also use the complete skills bundle directly:
+You can deliberately select the complete skills root for quick experimentation:
 
 ```bash
 # Add the bundle
@@ -85,17 +85,18 @@ amplifier bundle use skills
 amplifier run "List available skills"
 ```
 
-**Note:** The standalone bundle includes foundation and is useful for testing or quick experimentation, but the behavior inclusion pattern is recommended for production bundles.
+**Note:** This supporting legacy root includes Foundation and composes the
+skills behavior. It is useful for testing or quick experimentation; use the
+behavior inclusion pattern when adding skills capability to another host.
 
 ## Quick Start
 
-### 1. Add Skills to Your Bundle
+### 1. Add Skills to an Existing Host
 
 ```yaml
 # your-bundle.md
 includes:
-  - bundle: git+https://github.com/microsoft/amplifier-foundation@main
-  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#path=behaviors/skills.yaml
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
 ```
 
 ### 2. Create Skills Directory
@@ -113,7 +114,30 @@ amplifier run "What skills are available?"
 
 The agent will see available skills automatically - no need to call `load_skill(list=true)` first!
 
-### 4. Optional: Add Community Skills
+### New complete host: use Anchors
+
+If you are creating a complete host rather than adding a capability, use the
+lean Anchors base and compose the behavior explicitly:
+
+```yaml
+---
+bundle:
+  name: my-complete-host
+  version: 1.0.0
+  description: A complete host with skills support
+
+includes:
+  - bundle: git+https://github.com/microsoft/amplifier-foundation@main#subdirectory=bundles/anchors/bundle.md
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
+---
+
+@anchors:context/system.md
+```
+
+Anchors is leaner than the legacy Foundation root. Add other behaviors
+explicitly when the host needs them.
+
+### Optional: Add Community Skills
 
 ```bash
 # Clone example skills repository
@@ -318,6 +342,9 @@ Available skills (use load_skill tool):
 
 ### Usage in Bundles
 
+Add the behavior to the host that needs skills; do not create a consumer root
+solely to acquire this capability:
+
 ```markdown
 ---
 bundle:
@@ -325,8 +352,7 @@ bundle:
   description: Creates new Amplifier modules
 
 includes:
-  - bundle: git+https://github.com/microsoft/amplifier-foundation@main
-  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#path=behaviors/skills.yaml
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
 ---
 
 You are an Amplifier module creator.
@@ -349,6 +375,10 @@ Response: [Full guide with protocols, entry points, patterns]
 
 Agent: Creates module following the skill's patterns
 ```
+
+The `@<bundle>:skills` form is an explicitly supported value for
+`tool-skills.config.skills`. It is not general permission to use `@` mentions
+in arbitrary YAML fields.
 
 ### Python API
 

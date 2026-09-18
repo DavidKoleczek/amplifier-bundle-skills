@@ -4,11 +4,19 @@ Ground truth: amplifier-bundle-design-council/behaviors/design-council.yaml
 Fill every {{PLACEHOLDER}}, then delete this instruction block and the
 surrounding comment markers (this file must be valid YAML once filled — move
 this note out or convert to a '#' YAML comment before writing the final file).
+
+REUSED_LENS_BEHAVIOR_INCLUDES must render as zero or more two-space-indented
+`- bundle: <bundle>:behaviors/<name>` items. Include only reusable lens
+behaviors; never include a complete root here.
 -->
 bundle:
-  name: {{DOMAIN}}-council
+  name: {{DOMAIN}}-council-behavior
   version: 0.1.0
   description: "{{DOMAIN_TITLE}} Council — {{LENS_COUNT}} orthogonal {{DOMAIN_TITLE}} evaluation lenses"
+
+includes:
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
+{{REUSED_LENS_BEHAVIOR_INCLUDES}}
 
 tools:
   - module: tool-skills

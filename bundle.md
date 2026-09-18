@@ -28,32 +28,38 @@ Provides the [Agent Skills](https://agentskills.io/specification) system for Amp
 | **engineering-patterns** | Thirteen engineering pattern guides behind one catalog entry — CLI packaging, one-line installers, config/state, HTTP services, auth/TLS, file IPC, plugin discovery, instance storage, container orchestration, React microfrontends, MS Graph integration, self-managing tools, Amplifier tool leverage. Each is an L3 reference read on demand. |
 | **second-opinion** | Independent, selected-reviewer feedback on current work or a named prior session |
 
-## Usage
+## Use the behavior
 
-### Include the full behavior (recommended)
-
-```yaml
-includes:
-  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main
-```
-
-Or compose just the behavior:
+For reusable skills capability, compose the full behavior into an existing
+host:
 
 ```yaml
 includes:
-  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#path=behaviors/skills.yaml
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
 ```
 
 ### Include only the tool (no curated skills)
 
 ```yaml
 includes:
-  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#path=behaviors/skills-tool.yaml
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills-tool.yaml
 ```
 
-### Add your own skills alongside curated ones
+## Supporting legacy root
 
-Bundles that include this behavior and also ship their own skills should declare additional skill sources in their own behavior YAML:
+This `bundle.md` is a runnable legacy root for users who deliberately select
+its Foundation-based session. It composes the behavior above; use the behavior
+URI rather than this root when adding skills to another host.
+
+```bash
+amplifier bundle add git+https://github.com/microsoft/amplifier-bundle-skills@main
+amplifier bundle use skills
+```
+
+## Add your own skills alongside curated ones
+
+Bundles that include the behavior and also ship their own skills should declare
+additional skill sources in their own behavior YAML:
 
 ```yaml
 tools:
@@ -65,7 +71,9 @@ tools:
         - "git+https://github.com/microsoft/your-bundle@main#subdirectory=skills"
 ```
 
-> **URL fragments:** `#path=` selects a specific behavior file for `includes:`. `#subdirectory=` selects a directory subtree for module sources and skill discovery. They serve different purposes and are not interchangeable.
+`#subdirectory=behaviors/<name>.yaml` is the canonical behavior URI form.
+`#subdirectory=modules/tool-skills` and `#subdirectory=skills` select their
+respective source directories.
 
 @skills:context/skills-instructions.md
 

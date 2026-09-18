@@ -271,17 +271,46 @@ same guardrails, only the target differs.
 
 ### 7. Scaffold the bundle and choose its home
 
-Instantiate `bundle.md.tmpl`, `behavior.yaml.tmpl`, `awareness.md.tmpl` into a new
-`amplifier-bundle-<domain>-council` (thin: includes the skills bundle + its own
-behavior; behavior points `tool-skills.config.skills` at `@<bundle>:skills` and
-`context.include`s the thin awareness pointer). Archetype-named council → public;
-real-person-named lenses → keep those lenses in a private/team bundle and compose
-by reference.
+Always emit the flat-layout supporting root `bundle.md` as the namespace
+manifest for `amplifier-bundle-<domain>-council`, and emit the primary reusable
+payload at `behaviors/<domain>-council-behavior.yaml`. The registry discovers
+the root manifest to resolve its `@<domain>-council:skills` and
+`@<domain>-council:context/...` references when the behavior is installed
+directly. This namespace-only registration does not compose or select the root,
+so it does not make this root-first. Generic self-contained behaviors outside
+this flat layout may remain rootless.
+
+The behavior filename corresponds to the supporting root's extensionless
+`<domain>-council:behaviors/<domain>-council-behavior` include; the resolver
+appends `.yaml`. It owns required portable dependencies:
+the full skills behavior supplies the tool, instructions, and visibility;
+reused cross-bundle lenses are behavior includes; and its own
+`tool-skills.config.skills` points at `@<bundle>:skills`. Keep its source and
+the thin awareness `context.include`. Do not use complete roots as proxy
+dependencies.
+
+The always-emitted supporting root is also an optional runnable entry. It
+composes Anchors
+(`git+https://github.com/microsoft/amplifier-foundation@main#subdirectory=bundles/anchors/bundle.md`)
+and the council's own behavior only. Its name remains the namespace anchor;
+the behavior has the distinct `-behavior` name. Its body contains only
+`@anchors:context/system.md` unless a distinct root-only instruction is
+evidenced. Keep awareness in the behavior's `context.include`, not in the
+root body.
+
+Write the human overview, lens descriptions, grounding, and division of labor
+to the generated `README.md`; do not put them in the supporting root body.
+Archetype-named council → public; real-person-named lenses → keep those lenses
+in a private/team bundle and compose by reference.
 
 - **Human checkpoint:** confirm the bundle name and home (public vs private).
 
-**Success criteria:** Bundle composes; awareness pointer is a thin "this council
-exists, invoke /<domain>-council" — NOT the lens content.
+**Success criteria:** `bundle.md` is always emitted as the flat-layout
+namespace anchor; `behaviors/<domain>-council-behavior.yaml` is the primary
+direct-install artifact; the primary behavior composes all portable
+dependencies; the supporting root composes only Anchors and that behavior;
+awareness pointer is a thin "this council exists, invoke /<domain>-council" —
+NOT the lens content; and README carries the human overview.
 
 ### 8. Prove the council convenes (end-to-end)
 
@@ -312,7 +341,7 @@ for every lens the council added.
 Trim any restated procedure; keep guardrails and verbatim lens quotes. Run the git
 lifecycle.
 
-- **Execution:** Delegate branch/commit/PR/merge to `foundation:git-ops`.
+- **Execution:** Delegate branch/commit/PR/merge to `anchors:git-ops`.
 - **Human checkpoint:** confirm before opening/merging the PR.
 
 **Success criteria:** PR merged; then, in a clean session after `amplifier

@@ -142,6 +142,21 @@ class SecondOpinionContractTests(unittest.TestCase):
         self.assertIn("context-intelligence:graph-analyst", self.historical)
         self.assertIn("context-intelligence:session-navigator", self.historical)
 
+    def test_brief_and_synthesis_retain_behavior_first_guidance(self):
+        current_brief = " ".join(
+            self.skill.split("### Build the evidence brief", 1)[1]
+            .split("### Historical source", 1)[0]
+            .split()
+        )
+        report = " ".join(self.skill.split("### Report", 1)[1].split())
+        self.assertIn("applicable governing constraints and non-goals", current_brief)
+        self.assertIn("conflicting evidence or unresolved decisions", current_brief)
+        self.assertIn("explicitly state that they were not identified", current_brief)
+        self.assertIn("explicitly state that none were identified", current_brief)
+        self.assertIn("Preserve conditional recommendations in the synthesis", report)
+        self.assertIn("never turn “if X” into an unconditional plan", report)
+        self.assertIn("unmet or unknown condition", report)
+
     def test_read_only_and_injection_boundaries(self):
         delegate = " ".join(self.delegate.split())
         for phrase in (
