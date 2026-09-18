@@ -42,23 +42,14 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
 ## Installation
 
-### Recommended: Include the Behavior
+### Recommended: Add the Behavior to an Existing Host
 
-Add skills capability to an existing host by including the behavior. The host
-keeps ownership of its base/root and system instruction:
+Add this entry to the existing complete host's `includes:` list. This is a YAML
+fragment, not a standalone root; the host keeps ownership of its base/root and
+system instruction:
 
 ```yaml
----
-bundle:
-  name: my-bundle
-  version: 1.0.0
-  description: My custom bundle with skills support
-
-includes:
   - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
----
-
-# Your bundle instructions...
 ```
 
 **What this gives you:**
@@ -68,7 +59,7 @@ includes:
 - ✅ Clean dependency chain (no redundant includes)
 
 **Why this pattern?**
-- You control your foundation version
+- You retain your chosen base version
 - Explicit about what capabilities you're adding
 - Gets both tool + hook working together
 
@@ -93,10 +84,8 @@ behavior inclusion pattern when adding skills capability to another host.
 
 ### 1. Add Skills to an Existing Host
 
-```yaml
-# your-bundle.md
-includes:
-  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
+```bash
+amplifier bundle add git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml --app
 ```
 
 ### 2. Create Skills Directory
@@ -105,10 +94,9 @@ includes:
 mkdir -p .amplifier/skills
 ```
 
-### 3. Use Your Bundle
+### 3. Start Amplifier
 
 ```bash
-amplifier bundle use your-bundle.md
 amplifier run "What skills are available?"
 ```
 
@@ -342,19 +330,17 @@ Available skills (use load_skill tool):
 
 ### Usage in Bundles
 
-Add the behavior to the host that needs skills; do not create a consumer root
-solely to acquire this capability:
+To add the behavior to an existing complete host, add this entry to that host's
+existing `includes:` list. This is a fragment, not a standalone host:
+
+```yaml
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
+```
+
+For a new complete host, use the [Anchors-based example above](#new-complete-host-use-anchors).
+Keep the agent guidance in the existing host's instruction body, for example:
 
 ```markdown
----
-bundle:
-  name: module-creator
-  description: Creates new Amplifier modules
-
-includes:
-  - bundle: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=behaviors/skills.yaml
----
-
 You are an Amplifier module creator.
 
 Before creating modules:

@@ -1,5 +1,6 @@
 """Behavior-first documentation and council scaffold regression tests."""
 
+import re
 from pathlib import Path
 
 import yaml
@@ -9,12 +10,18 @@ REPO = Path(__file__).parents[1]
 README = (REPO / "README.md").read_text(encoding="utf-8")
 BUNDLE = (REPO / "bundle.md").read_text(encoding="utf-8")
 COUNCIL_SKILL = (REPO / "skills" / "councilify" / "SKILL.md").read_text(encoding="utf-8")
+ORCHESTRATOR_TEMPLATE = (
+    REPO / "skills" / "councilify" / "templates" / "council-orchestrator.SKILL.md.tmpl"
+).read_text(encoding="utf-8")
 ROOT_TEMPLATE = (
     REPO / "skills" / "councilify" / "templates" / "bundle.md.tmpl"
 ).read_text(encoding="utf-8")
 BEHAVIOR_TEMPLATE = (
     REPO / "skills" / "councilify" / "templates" / "behavior.yaml.tmpl"
 ).read_text(encoding="utf-8")
+MODULE_README = (REPO / "modules" / "tool-skills" / "README.md").read_text(
+    encoding="utf-8"
+)
 
 SKILLS_BEHAVIOR_URI = (
     "git+https://github.com/microsoft/amplifier-bundle-skills@main"
@@ -51,6 +58,23 @@ def frontmatter(text: str) -> dict:
     parsed = yaml.safe_load(yaml_text)
     assert isinstance(parsed, dict)
     return parsed
+
+
+def section(text: str, start: str, end: str) -> str:
+    """Return the text between two known documentation headings."""
+    return text.split(start, 1)[1].split(end, 1)[0]
+
+
+def fenced_blocks(text: str, language: str) -> list[str]:
+    """Return fenced blocks of one language without their fence markers."""
+    return re.findall(rf"```{language}\n(.*?)```", text, re.DOTALL)
+
+
+def includes_fragment(block: str) -> list[str]:
+    """Parse a documented includes-list fragment as YAML."""
+    parsed = yaml.safe_load(f"includes:\n{block}")
+    assert isinstance(parsed, dict)
+    return [entry["bundle"] for entry in parsed["includes"]]
 
 
 def test_skills_docs_lead_with_the_behavior_and_keep_the_legacy_root_supporting():
@@ -113,3 +137,62 @@ def test_rendered_council_behavior_keeps_portable_skill_dependency_in_behavior()
     assert "to the generated `README.md`" in COUNCIL_SKILL
     assert "anchors:git-ops" in COUNCIL_SKILL
     assert "foundation:git-ops" not in COUNCIL_SKILL
+
+
+def test_council_digest_uses_the_explorer_the_supporting_root_supplies():
+    root = render_template(ROOT_TEMPLATE)
+    root_includes = [entry["bundle"] for entry in frontmatter(root)["includes"]]
+
+    assert root_includes[0] == ANCHORS_URI
+    assert "`anchors:explorer`" in ORCHESTRATOR_TEMPLATE
+    assert "foundation:explorer" not in ORCHESTRATOR_TEMPLATE
+    assert re.search(
+        r"only an explorer advertised in that host's\s+delegation agent catalog",
+        ORCHESTRATOR_TEMPLATE,
+    )
+    assert "perform no writes or other effectful actions" in ORCHESTRATOR_TEMPLATE
+    for template in (ORCHESTRATOR_TEMPLATE, ROOT_TEMPLATE, BEHAVIOR_TEMPLATE):
+        assert "Ground truth: amplifier-bundle-design-council" not in template
+
+
+def test_module_readme_existing_host_examples_are_parseable_includes_fragments():
+    installation = section(
+        MODULE_README,
+        "### Recommended: Add the Behavior to an Existing Host",
+        "### Supporting legacy root",
+    )
+    usage = section(MODULE_README, "### Usage in Bundles", "### Agent Workflow Example")
+
+    for documented_section in (installation, usage):
+        fragments = fenced_blocks(documented_section, "yaml")
+        assert fragments
+        for fragment in fragments:
+            assert "---" not in fragment
+            assert "bundle:\n" not in fragment
+            assert includes_fragment(fragment) == [SKILLS_BEHAVIOR_URI]
+
+
+def test_module_readme_quick_start_installs_into_the_existing_app():
+    quick_start = section(MODULE_README, "## Quick Start", "### New complete host")
+
+    assert f"amplifier bundle add {SKILLS_BEHAVIOR_URI} --app" in quick_start
+    assert 'amplifier run "What skills are available?"' in quick_start
+    assert "amplifier bundle use your-bundle.md" not in quick_start
+
+
+def test_complete_host_examples_compose_anchors_or_are_intentional_legacy():
+    complete_host_examples = [
+        frontmatter(block)
+        for block in fenced_blocks(MODULE_README, "yaml")
+        if block.startswith("---") and "bundle:\n" in block
+    ]
+    complete_host_examples.append(frontmatter(render_template(ROOT_TEMPLATE)))
+    deployed_legacy_root = frontmatter(BUNDLE)
+
+    assert complete_host_examples
+    for example in complete_host_examples:
+        includes = [entry["bundle"] for entry in example["includes"]]
+        assert ANCHORS_URI in includes
+
+    assert "## Supporting legacy root" in BUNDLE
+    assert ANCHORS_URI not in [entry["bundle"] for entry in deployed_legacy_root["includes"]]
