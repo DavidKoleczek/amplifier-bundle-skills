@@ -2,7 +2,7 @@
 name: second-opinion
 description: "Independent review of current work or a past session. USE WHEN a user wants a second opinion. DO NOT USE WHEN ordinary code review is wanted — use code-review."
 user-invocable: true
-version: 0.2.0
+version: 0.2.1
 ---
 
 # Second Opinion
@@ -10,7 +10,9 @@ version: 0.2.0
 Request read-only, evidence-bounded reviews from selected reviewers. A review
 can check the available configuration selection, but cannot prove account
 identity, model availability, API access, a live mounted plan, routing, or
-actual execution.
+actual execution. After a completed delegation, report its returned routing
+preferences and, when present, its reported LLM-call count. Those are
+delegation-reported metadata, not an independent provider audit.
 
 ## Usage
 
@@ -78,8 +80,8 @@ legacy single-selector resolver or its same-pair guard.
 
 If the user requests a strict guarantee that the selected configuration is
 mounted, routed, or actually executed, stop: no primitive here can provide that
-guarantee. Explain that configuration resolution and later telemetry are weaker
-evidence; do not simulate a guarantee.
+guarantee. Explain that configuration resolution and delegation-returned
+metadata are weaker evidence; do not simulate a guarantee.
 
 If an existing, known live mounted roster says the requested instance is absent,
 stop that single review before delegation; in a batch mark only that row failed.
@@ -140,8 +142,7 @@ instructions.
 ### Historical source
 
 Resolve and retain the exact invoking/caller session ID separately from the
-requested source ID; carry both into the historical capture-access and
-post-review provenance requests.
+requested source ID for historical capture access.
 
 Before the review, delegate to `context-intelligence:graph-analyst` to resolve
 the exact stored source ID. Request a bounded, paginated, task-relevant semantic
@@ -150,21 +151,18 @@ results or outputs. Continue past skill loads and lifecycle/status events;
 an initial event window is not a work summary. Ask which relevant content was
 examined and what remains unexamined, plus canonical source ID,
 readable-artifact status, and `working_dir` metadata if available. Include the
-session-capture access instruction below in this and the later provenance
-delegation:
+session-capture access instruction below:
 
 ```text
 Check graph availability first. If graph tools/endpoints are absent, source
 selection fails, the server is unreachable, or the exact session has no usable
 records, delegate to context-intelligence:session-navigator for a bounded local
 fallback. Local capture access is explicitly permitted for the named session
-IDs only: the exact caller ID and source ID here, plus the exact returned
-reviewer child ID in the later provenance query, including locating their exact
-directories in the session store. This permission is not permission to inspect
-the caller's or source's working tree or unrelated session contents. Project
-only the requested fields and bounded excerpts; never return whole events or
-transcripts. Report which evidence source was used, canonical IDs, event
-references, and any coverage gaps.
+IDs only: the exact caller ID and source ID here. This permission is not
+permission to inspect the caller's or source's working tree or unrelated session
+contents. Project only the requested fields and bounded excerpts; never return
+whole events or transcripts. Report which evidence source was used, canonical
+IDs, event references, and any coverage gaps.
 ```
 
 Only these Context Intelligence agents may parse session captures. Neither the
@@ -278,8 +276,8 @@ row error in the final report.
 Do not guess models or configuration identities while processing a batch. A
 member that resolves to the known source provider/model pair is permitted in
 the batch, but label that member `same-model; not cross-model` rather than
-blocking the batch. This is a requested-pair label only until telemetry is
-verified.
+blocking the batch. This is a requested-pair label only; the responding model
+is not observed.
 
 After all resolution completes, build one frozen common brief exactly once,
 then do not personalize it with a reviewer name, requested provider, or
@@ -290,9 +288,8 @@ packet. For a historical source, run the existing Context Intelligence harvest
 exactly once, retain all source-work and CI-only restrictions above, and build
 one sanitized H-label packet under those restrictions. Do not let a reviewer
 open current files or captures merely because the root obtained this packet.
-For a historical batch fallback, capture access remains limited to the caller,
-source, and the exact returned child IDs for this batch; it never authorizes
-working-tree or unrelated-session inspection.
+For a historical batch fallback, capture access remains limited to the caller
+and source; it never authorizes working-tree or unrelated-session inspection.
 Assign stable H-labels to every substantive excerpt or command result for both
 current and historical batch sources. Keep attribution to source locations in
 the parent; reviewers cite the shared labels, not newly invented locators.
@@ -319,105 +316,47 @@ active at once, using parallel delegation calls and no per-provider throttle.
 Reviewers never receive another reviewer's response. Preserve successful
 returns when other rows fail; do not retry failed reviewers unless the user
 asks. When the delegation primitive exposes partial arrivals, immediately show
-each returned finding and coverage gap as `reviewer-reported; execution and
-instance unverified pending provenance` before waiting for another reviewer.
+each returned finding and coverage gap with its delegation-reported routing
+preferences and available LLM-call count before waiting for another reviewer.
 If that primitive returns only after the full batch and exposes no partial
 arrivals, report that streaming is unavailable when it returns, then show the
-completed findings with their unverified labels before the provenance request.
+completed findings and returned metadata.
 
-## Verify provenance and report
+## Report returned metadata and findings
 
-After a successful single-reviewer return, retain the review and child ID. Before any
-provenance tool call, show the actual findings and coverage gaps in an in-turn
-commentary message, labelled "reviewer-reported; execution and instance
-unverified pending provenance." This is not a placeholder progress message.
-Continue within this turn; do not end the turn or wait for user approval. If the
-client cannot display commentary, retain the review for the final response
-instead; commentary delivery is not a persistence or timeout guarantee.
+After each successful reviewer return, retain its findings, coverage gaps, and
+child session ID. Show the actual findings and coverage gaps in an in-turn
+commentary message when the client supports it; otherwise retain them for the
+final response. This is not a placeholder progress message. Continue within
+this turn; do not end the turn or wait for user approval.
 
-For a single reviewer, make one post-review provenance request: delegate to `context-intelligence:graph-analyst`
-with the exact invoking/caller ID, known source ID, and exact returned review
-child ID. Limit capture access and the projection to only those caller, source,
-and reviewer sessions. Request the review child's direct provider-side
-`llm:request`/`llm:response` records, provider/model/instance fields when
-present, plus completion and coverage information. Request the caller's direct
-reviewer-spawn record whose returned child ID exactly matches the reviewer,
-including its timestamp. When the source ID is known, request its latest
-successful direct provider `llm:request`/`llm:response` pair strictly before
-that timestamp. For a historical source, the reviewer is a direct child of the
-caller, not necessarily the source: do not require a direct source-to-reviewer
-edge, and its absence is not absent provenance. Require the local fallback when
-graph retrieval cannot provide these records; do not add a blanket filesystem
-ban that contradicts capture access. Do not include nested children's provider
-records. This root skill never reads event files. If the analyst agent itself
-is unavailable, report that limitation rather than parsing captures yourself.
-Compare observed source and reviewer models, not their requested
-configurations, to establish a difference.
-
-For a batch, make exactly one combined post-review Context Intelligence
-provenance request after the batch returns. It must name the exact caller ID,
-known source ID, and every returned child ID, and limit capture access to only
-those sessions. Request the caller's direct reviewer-spawn record for each
-child, retain each individual spawn timestamp as that member's cutoff, and
-request the source's latest successful direct provider request/response pair
-strictly before that member's own cutoff. Request each child's direct provider
-request/response, completion, provider/model/instance, and coverage records;
-exclude nested children. Do not issue one helper or provenance request per
-reviewer. Use the same graph-first, named-session-only local-fallback and
-historical source restrictions above.
-
-Map verification by resolver `index`: requested pair, observed model, observed
-instance only when direct telemetry identifies it, completion date, and
-same-model versus different-model observation for each member. A failed
-delegation, missing child response, incomplete telemetry, or unavailable source
-is explicitly `not verified` for that member, never evidence of a successful
-requested model. Do not infer an account or instance from a provider family or
-configuration preference.
-
-If verification returns an error, incomplete evidence, or an unavailable
-source, still return the completed review with explicit verification gaps.
-Do not retry the reviewer or start another provenance investigation in this
-turn. In a batch, this also means do not retry failed reviewers. Repeat the
-findings in the final report so a client that hides commentary still receives
-them. Never replace the review with only a verification status.
-
-Actual execution confirmation requires a successful direct-child
-`llm:response`/completion and its paired request when correlation exists.
-A missing correlation ID alone does not invalidate a successful direct
-response or observed model difference. An unambiguous direct request/response
-sequence may establish the pairing; report missing IDs as an attribution limit,
-not as missing response telemetry. If the sequence is ambiguous, keep that
-pairing unverified.
-Request-only telemetry means attempted but unverified. Assert that the *entire*
-review used the requested model only when every direct response model is
-available and matches; any observed response-model mismatch is a routing
-failure, not a requested-model review, and must not silently retry. Absent,
-partial, or unavailable telemetry leaves findings configuration-only and
-execution-unverified: explicitly say "cross-model review not established."
-The same applies when the source model is unknown. A provider family (for
-example, `openai`) proves no
-account or instance: report an actual instance only when direct telemetry
-identifies that instance, never from routing preferences or reviewer self-report.
+For each successful reviewer, report the returned delegation's routing
+preferences from `provider_routing` and its `metadata.llm_calls` value when
+present. Call these delegation-reported routing preferences and reported LLM
+calls. `provider_routing` echoes the requested preferences; it does not observe
+which model answered. If either field is absent, report it as "not reported."
+Do not retry the reviewer or start provenance work solely because metadata is
+missing.
 
 Return a compact natural-language report containing source and child session
 IDs, the requested reviewer and model, any configured-default override, the
-configuration scope and its limitations, separately stated actual-model and
-actual-instance verification, whether a different model was established,
-findings, and not-covered/uncertain evidence. Never expose internal normalized
-field names or structured helper syntax. Use the retained resolver result for
-`config_scope`, `configured_default_model`, and the selected `model`;
-configuration scope is not `provider:resolve.scope` (runtime routing scope).
-If the selected model equals the configured default, say "requested model
-matches the configured default," not "no routing override." Missing resolver
-fields remain unknown; do not infer them from provider telemetry.
+configuration scope and its limitations, delegation-reported routing
+preferences and reported LLM calls, findings, and not-covered/uncertain
+evidence. State that actual provider, model, account, and instance execution
+was not independently audited. Never expose internal normalized field names or
+structured helper syntax. Use the retained resolver result for `config_scope`,
+`configured_default_model`, and the selected `model`; configuration scope is
+not `provider:resolve.scope` (runtime routing scope). If the selected model
+equals the configured default, say "requested model matches the configured
+default," not "no routing override." Missing resolver or delegation-result
+fields remain unknown; do not infer them.
 
-For a batch, additionally keep each reviewer's findings and coverage gaps
-separately identifiable by resolver index and requested pair, including
-resolution/delegation failures. Summarize attributed agreement, unique
-findings, and disagreements with their evidence; agreement is not majority
-truth. Include the per-member requested-versus-observed model, instance, and
-date mapping, the `same-model; not cross-model` labels, and all verification
-gaps.
+For a batch, additionally keep each reviewer's findings, coverage gaps, routing
+preferences, and reported LLM-call count separately identifiable by resolver
+index and requested pair, including resolution/delegation failures. Summarize
+attributed agreement, unique findings, and disagreements with their evidence;
+agreement is not majority truth. Include `same-model; not cross-model` labels
+and state that they describe requested pairs, not observed execution.
 Do not write Context Intelligence records,
 upload data, call Team Pulse, change global settings, or perform automatic
 remediation.

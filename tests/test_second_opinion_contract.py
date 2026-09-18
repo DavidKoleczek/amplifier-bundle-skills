@@ -8,7 +8,7 @@ SKILL_PATH = (
 )
 
 
-class SecondOpinionHistoricalProvenanceContractTests(unittest.TestCase):
+class SecondOpinionContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.skill = SKILL_PATH.read_text()
@@ -18,12 +18,12 @@ class SecondOpinionHistoricalProvenanceContractTests(unittest.TestCase):
             .split("## Delegate exactly one reviewer", 1)[0]
             .split()
         )
-        cls.provenance = " ".join(
-            cls.skill.split("## Verify provenance and report", 1)[1].split()
+        cls.report = " ".join(
+            cls.skill.split("## Report returned metadata and findings", 1)[1].split()
         )
         cls.batch = " ".join(
             cls.skill.split("## Multiple reviewers", 1)[1]
-            .split("## Verify provenance and report", 1)[0]
+            .split("## Report returned metadata and findings", 1)[0]
             .split()
         )
         cls.batch_delegate = cls.skill.split("## Multiple reviewers", 1)[
@@ -97,21 +97,11 @@ class SecondOpinionHistoricalProvenanceContractTests(unittest.TestCase):
         self.assertIn("The source is current unless the user requests an older session.", internal)
         self.assertIn("defaults to 10, may exceed 10", internal)
 
-    def test_historical_provenance_uses_the_caller_spawn_boundary(self):
+    def test_historical_harvest_limits_capture_access_to_caller_and_source(self):
         self.assertIn("the exact caller ID and source ID here", self.historical)
-        self.assertIn("exact returned reviewer child ID", self.historical)
-        self.assertIn("exact invoking/caller ID", self.provenance)
-        self.assertIn("only those caller, source, and reviewer sessions", self.provenance)
-        self.assertIn(
-            "direct reviewer-spawn record whose returned child ID exactly matches the reviewer",
-            self.provenance,
-        )
-        self.assertIn(
-            "direct provider `llm:request`/`llm:response` pair strictly before",
-            self.provenance,
-        )
-        self.assertIn("do not require a direct source-to-reviewer edge", self.provenance)
-        self.assertIn("Do not include nested children's provider records", self.provenance)
+        self.assertNotIn("exact returned reviewer child ID", self.historical)
+        self.assertNotIn("post-review provenance", self.historical)
+        self.assertIn("Only these Context Intelligence agents may parse session captures", self.historical)
 
     def test_historical_harvest_requires_substantive_evidence(self):
         self.assertIn(
@@ -128,31 +118,30 @@ class SecondOpinionHistoricalProvenanceContractTests(unittest.TestCase):
         self.assertIn("capture filenames, line locations", self.historical)
         self.assertIn("mapping in the parent", self.historical)
 
-    def test_missing_correlation_id_does_not_discard_observed_models(self):
+    def test_report_uses_delegation_metadata_without_claiming_actual_routing(self):
         self.assertIn(
-            "A missing correlation ID alone does not invalidate", self.provenance
+            "returned delegation's routing preferences from `provider_routing`",
+            self.report,
         )
-        self.assertIn("unambiguous direct request/response sequence", self.provenance)
+        self.assertIn("its `metadata.llm_calls` value when present", self.report)
+        self.assertIn("`provider_routing` echoes the requested preferences", self.report)
+        self.assertIn("does not observe which model answered", self.report)
+        self.assertIn("actual provider, model, account, and instance execution", self.report)
+        self.assertIn("not independently audited", self.report)
 
-    def test_completed_findings_are_shown_before_provenance(self):
-        delivery = self.provenance.index("Before any provenance tool call")
-        verification = self.provenance.index(
-            "delegate to `context-intelligence:graph-analyst`"
+    def test_report_handles_missing_metadata_without_post_review_work(self):
+        self.assertIn('report it as "not reported."', self.report)
+        self.assertIn(
+            "Do not retry the reviewer or start provenance work solely because metadata is missing.",
+            self.report,
         )
-        self.assertLess(delivery, verification)
-        self.assertIn("actual findings and coverage gaps", self.provenance)
-        self.assertIn("execution and instance unverified pending provenance", self.provenance)
-        self.assertIn("do not end the turn or wait for user approval", self.provenance)
-
-    def test_incomplete_verification_does_not_discard_review(self):
-        self.assertIn("one post-review provenance request", self.provenance)
-        self.assertIn("still return the completed review", self.provenance)
-        self.assertIn("Repeat the findings in the final report", self.provenance)
+        self.assertNotIn("context-intelligence:graph-analyst", self.report)
+        self.assertNotIn("llm:request", self.report)
 
     def test_report_settings_scope_is_not_runtime_routing_scope(self):
-        self.assertIn("retained resolver result", self.provenance)
-        self.assertIn("`config_scope`", self.provenance)
-        self.assertIn("not `provider:resolve.scope`", self.provenance)
+        self.assertIn("retained resolver result", self.report)
+        self.assertIn("`config_scope`", self.report)
+        self.assertIn("not `provider:resolve.scope`", self.report)
 
     def test_batch_command_defaults_to_ten_and_allows_larger_positive_concurrency(self):
         self.assertIn("Ten reviews may run at once by default", self.public)
@@ -222,7 +211,7 @@ class SecondOpinionHistoricalProvenanceContractTests(unittest.TestCase):
         self.assertIn("make the brief substantive", self.batch)
         self.assertIn("Context Intelligence harvest exactly once", self.batch)
         self.assertIn("all source-work and CI-only restrictions", self.batch)
-        self.assertIn("capture access remains limited to the caller, source, and the exact returned", self.batch)
+        self.assertIn("capture access remains limited to the caller and source", self.batch)
         single = " ".join(
             self.skill.split("## Delegate exactly one reviewer", 1)[1]
             .split("## Multiple reviewers", 1)[0]
@@ -235,20 +224,17 @@ class SecondOpinionHistoricalProvenanceContractTests(unittest.TestCase):
             " ".join(self.skill.split()),
         )
 
-    def test_batch_fanout_and_provenance_preserve_returns_and_member_attribution(self):
+    def test_batch_fanout_and_reported_metadata_preserve_member_attribution(self):
         self.assertIn("at most the effective concurrency active at once", self.batch)
         self.assertIn("parallel delegation calls and no per-provider throttle", self.batch)
         self.assertIn("Reviewers never receive another reviewer's response", self.batch)
         self.assertIn("Preserve successful returns when other rows fail", self.batch)
         self.assertIn("streaming is unavailable", self.batch)
-        self.assertIn("exactly one combined post-review Context Intelligence", self.provenance)
-        self.assertIn("every returned child ID", self.provenance)
-        self.assertIn("each individual spawn timestamp as that member's cutoff", self.provenance)
-        self.assertIn("one helper or provenance request per reviewer", self.provenance)
-        self.assertIn("Map verification by resolver `index`", self.provenance)
-        self.assertIn("is explicitly `not verified` for that member", self.provenance)
-        self.assertIn("attributed agreement, unique findings, and disagreements", self.provenance)
-        self.assertIn("agreement is not majority truth", self.provenance)
+        self.assertIn("delegation-reported routing preferences", self.batch)
+        self.assertIn("available LLM-call count", self.batch)
+        self.assertIn("separately identifiable by resolver index", self.report)
+        self.assertIn("attributed agreement, unique findings, and disagreements", self.report)
+        self.assertIn("agreement is not majority truth", self.report)
 
 
 if __name__ == "__main__":
