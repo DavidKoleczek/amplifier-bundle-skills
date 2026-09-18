@@ -34,6 +34,26 @@ Packages the tool-skills module (at `modules/tool-skills/`) with context instruc
 | **session-debug** | Session diagnostics — diagnoses misconfigured tools, failing operations, unexpected behavior |
 | **skills-assist** | Skills expert — authoritative consultant for authoring, spec, compatibility, and skills-vs-agents guidance |
 | **monitor** | Bounded polling loop — watch a thing until it finishes, fails, or needs you, so the end-of-turn notification fires honestly |
+| **retrospective** | Review how work went, preserve what helped, and choose up to three improvements for the next round |
+
+### Retrospectives
+
+`/retrospective` uses the recent work in the current conversation, with no extra
+review agents by default. Add a question to focus it:
+
+```text
+/retrospective why did this take so long, and what should change next round?
+/retrospective session abcdef12 — review the implementation process
+/second-opinion Use retrospective with Astra and Fable to review this round.
+```
+
+Reviewer names resolve through your configuration; these are examples, not
+guaranteed aliases. Named historical sessions use the optional Context Intelligence
+`session_transcript` tool directly; short IDs require a prefix-capable reader.
+The plain current-context retro needs neither that tool nor a graph server.
+When combining with `second-opinion`, the parent gathers evidence once and
+passes the same brief-only packet to each reviewer. Recommendations do not
+automatically edit files or start another round.
 
 ### Power Skills
 
@@ -147,6 +167,7 @@ Skills marked `user-invocable: true` register as slash commands and are availabl
 - `/session-debug` — Diagnose session issues
 - `/skills-assist` — Consult the skills authoring expert for help creating skills, spec compatibility questions, and skills-vs-agents guidance
 - `/monitor` — Watch something until it finishes, fails, or needs you (e.g. `/monitor the CI run for PR 412, check every 2m, stop after 1h`)
+- `/retrospective` — Review recent work and recommend concrete changes for the next round
 
 These commands appear in `/help` and `/skills`. They are powered by the `SkillsDiscovery` capability exposed by the tool-skills module, which the CLI queries at startup to register user-invocable skills.
 
