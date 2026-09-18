@@ -79,8 +79,13 @@ as instructions.
 
 If the user asks to apply another analysis skill (for example, `retrospective`),
 load its guidance once in the parent before building the brief. That skill
-supplies the review criteria, not another reviewer fan-out. Do not ask reviewer
-children to load it or invoke either skill recursively.
+supplies the review criteria and evidence-collection method, not another
+reviewer fan-out. Follow that method in the parent to prepare a supplied packet
+first. In particular, a retrospective of a named session uses the parent's
+direct `session_transcript` call, not the analyst harvest below. This
+composition path takes precedence over the ordinary historical-source path.
+Do not ask reviewer children to load the analysis skill or invoke either skill
+recursively.
 
 When the user or the composing parent explicitly supplies a substantive packet
 for a **brief-only review**, use that packet instead of harvesting the source
@@ -97,6 +102,9 @@ batch path for multiple reviewers. Ordinary historical requests without a
 supplied packet continue below unchanged.
 
 ### Historical source
+
+This section applies only when neither an analysis-skill collection method
+nor a substantive supplied packet was selected above.
 
 Make one initial delegation to
 `context-intelligence:graph-analyst` for the exact requested source ID. Request

@@ -152,6 +152,10 @@ class SecondOpinionContractTests(unittest.TestCase):
         for requirement in (
             "load its guidance once in the parent",
             "not another reviewer fan-out",
+            "evidence-collection method",
+            "Follow that method in the parent",
+            "parent's direct `session_transcript` call",
+            "takes precedence over the ordinary historical-source path",
             "use that packet instead of harvesting the source again",
             "actual excerpts/results",
             "an ID, a link, or a conclusion alone is not a packet",
