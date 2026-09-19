@@ -64,4 +64,4 @@ def test_user_docs_advertise_the_skill_and_its_optional_dependencies():
     readme = (ROOT / "README.md").read_text()
     assert "/retrospective" in readme
     assert "short IDs require a prefix-capable reader" in readme
-    assert "**retrospective**" in (ROOT / "bundle.md").read_text()
+    assert "**retrospective**" in readme

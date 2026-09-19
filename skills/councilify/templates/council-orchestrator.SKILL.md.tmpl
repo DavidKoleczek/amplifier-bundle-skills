@@ -1,9 +1,9 @@
 <!--
 councilify template: fork-mode council orchestrator.
 
-Ground truth this is derived from (re-verify against these if either changes):
-  - amplifier-bundle-skills/skills/council/SKILL.md              (repo-digest shape, 5 phases)
-  - amplifier-bundle-design-council/skills/design-council/SKILL.md (no-digest shape, 4 phases)
+Implemented behavior-first contract: the generated supporting root composes
+Anchors and this council's own behavior only. Preserve the optional neutral
+pre-digest, cold fan-out, debate, and synthesis guardrails below.
 
 HOW TO USE THIS TEMPLATE
 1. Fill every {{PLACEHOLDER}}.
@@ -145,10 +145,15 @@ If the target is a {{PREDIGEST_TRIGGER}}, do **not** make every lens crawl the
 whole thing independently — it's expensive and each would map it differently.
 Instead:
 
-1. **Run ONE neutral `foundation:explorer` digest first.** Use `delegate` to
-   produce a **factual, judgment-free** digest: {{DIGEST_CONTENTS}}. **Neutral
-   by contract — it maps, it does not opine.** A pre-baked verdict would bias
-   the panel.
+1. **Run ONE neutral explorer digest first.** For the generated supporting
+   root, use `delegate` with `anchors:explorer`, which its Anchors include
+   supplies. In any other host, use only an explorer advertised in that host's
+   delegation agent catalog; if none is advertised, report the digest as
+   **UNAVAILABLE** and proceed without it. Do not compose a Foundation root or
+   imply an explorer is available. Produce a **factual, judgment-free** digest:
+   {{DIGEST_CONTENTS}}. **Neutral by contract — it maps, it does not opine.**
+   The digest is read-only: perform no writes or other effectful actions. A
+   pre-baked verdict would bias the panel.
 2. **Pass the digest + the target to every lens.** The digest is the shared
    map; each lens reads deeper into exactly what its load-bearing question
    cares about.
