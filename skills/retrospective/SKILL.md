@@ -1,8 +1,9 @@
 ---
 name: retrospective
 description: "Review how work went and improve the next round. USE WHEN asked for a retro, delays, or process lessons. DO NOT USE for code review or transcript replay."
-version: 0.1.0
+version: 0.1.1
 user-invocable: true
+shortcut: retro
 license: MIT
 ---
 
