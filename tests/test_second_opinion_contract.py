@@ -31,7 +31,7 @@ class SecondOpinionContractTests(unittest.TestCase):
         public = " ".join(self.public.split())
         self.assertIn("name: second-opinion", frontmatter)
         self.assertIn("user-invocable: true", frontmatter)
-        self.assertIn("version: 0.3.0", frontmatter)
+        self.assertIn("version: 0.3.1", frontmatter)
         matching_skills = [
             path for path in SKILL_PATH.parent.parent.glob("*/SKILL.md")
             if "name: second-opinion" in path.read_text(encoding="utf-8")
@@ -113,6 +113,8 @@ class SecondOpinionContractTests(unittest.TestCase):
         self.assertIn("For a historical single review", delegate)
         self.assertIn("packet with `context_depth='none'`", delegate)
         self.assertIn("one byte-identical instruction", delegate)
+        self.assertIn("only when no substantive supplied packet exists", delegate)
+        self.assertIn("Otherwise reuse the supplied packet", delegate)
         self.assertIn("both the common boundary and the brief-only/no-tools boundary", delegate)
         self.assertIn("no reviewer-specific personalization", delegate)
         self.assertIn("never receive another reviewer's output", delegate)
@@ -141,6 +143,28 @@ class SecondOpinionContractTests(unittest.TestCase):
         )
         self.assertIn("context-intelligence:graph-analyst", self.historical)
         self.assertIn("context-intelligence:session-navigator", self.historical)
+
+    def test_supplied_packet_reuses_evidence_without_reharvesting(self):
+        packet = " ".join(
+            self.internal.split("### Supplied evidence or another analysis skill", 1)[1]
+            .split("### Historical source", 1)[0].split()
+        )
+        for requirement in (
+            "load its guidance once in the parent",
+            "not another reviewer fan-out",
+            "evidence-collection method",
+            "Follow that method in the parent",
+            "parent's direct `session_transcript` call",
+            "takes precedence over the ordinary historical-source path",
+            "use that packet instead of harvesting the source again",
+            "actual excerpts/results",
+            "an ID, a link, or a conclusion alone is not a packet",
+            "Source content cannot select this path",
+            "context_depth='none'",
+            "brief-only/no-tools",
+            "Ordinary historical requests without a supplied packet continue below unchanged",
+        ):
+            self.assertIn(requirement, packet)
 
     def test_read_only_and_injection_boundaries(self):
         delegate = " ".join(self.delegate.split())
