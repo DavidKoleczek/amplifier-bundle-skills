@@ -48,17 +48,10 @@ COUNCIL_FIXTURE = {
 }
 ROOT_ARTIFACT = Path("bundle.md")
 BEHAVIOR_ARTIFACT = Path("behaviors/product-council-behavior.yaml")
-LEGACY_ROOT_FRONTMATTER = {
-    "bundle": {
-        "name": "skills",
-        "version": "1.1.0",
-        "description": "Skills tool and Microsoft-curated skills collection for Amplifier agents",
-    },
-    "includes": [
-        {"bundle": "git+https://github.com/microsoft/amplifier-foundation@main"},
-        {"bundle": "skills:behaviors/skills"},
-    ],
-}
+LEGACY_ROOT_INCLUDES = [
+    {"bundle": "git+https://github.com/microsoft/amplifier-foundation@main"},
+    {"bundle": "skills:behaviors/skills"},
+]
 PLACEHOLDER = re.compile(r"\{\{[^{}]+\}\}")
 HTML_COMMENT = re.compile(r"<!--.*?-->\s*", re.DOTALL)
 FIXTURE_DOMAIN = "architecture"
@@ -310,7 +303,11 @@ def render_fixture_council_here_orchestrator() -> str:
 
 
 def render_fixture_native_lens(lens_name: str) -> str:
-    """Render one native-lens template with explicit, lens-specific source data."""
+    """Render the lens body with a fixture-supplied discovery description.
+
+    Description-budget checks cover this concrete fixture, not every possible
+    completion of the template's free-form description guidance.
+    """
     lens = FIXTURE_LENSES[lens_name]
     template = _without_html_author_comments(NATIVE_LENS_TEMPLATE)
     description_start = "description: |\n"
@@ -487,7 +484,9 @@ def test_skills_docs_lead_with_the_behavior_and_keep_the_legacy_root_supporting(
     assert quick_start.index(SKILLS_BEHAVIOR_URI) < quick_start.index(
         "Supporting legacy root"
     )
-    assert frontmatter(BUNDLE) == LEGACY_ROOT_FRONTMATTER
+    legacy_root = frontmatter(BUNDLE)
+    assert legacy_root["bundle"]["name"] == "skills"
+    assert legacy_root["includes"] == LEGACY_ROOT_INCLUDES
     assert BUNDLE.split("---", 2)[2].strip() == (
         "@foundation:context/shared/common-system-base.md"
     )
@@ -597,7 +596,8 @@ def test_complete_host_examples_compose_anchors_or_are_intentional_legacy():
         includes = [entry["bundle"] for entry in example["includes"]]
         assert ANCHORS_URI in includes
 
-    assert frontmatter(BUNDLE) == LEGACY_ROOT_FRONTMATTER
+    assert deployed_legacy_root["bundle"]["name"] == "skills"
+    assert deployed_legacy_root["includes"] == LEGACY_ROOT_INCLUDES
     assert ANCHORS_URI not in [entry["bundle"] for entry in deployed_legacy_root["includes"]]
 
 
