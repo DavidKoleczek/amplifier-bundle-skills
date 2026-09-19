@@ -38,11 +38,13 @@ Packages the tool-skills module (at `modules/tool-skills/`) with context instruc
 
 ### Retrospectives
 
-`/retrospective` uses the recent work in the current conversation, with no extra
-review agents by default. Add a question to focus it:
+`/retro` and `/retrospective` invoke the same skill, with the same arguments.
+They use the recent work in the current conversation, with no extra review
+agents by default. Add a question to focus it:
 
 ```text
 /retrospective why did this take so long, and what should change next round?
+/retro what should change next round?
 /retrospective session abcdef12 — review the implementation process
 /second-opinion Use retrospective with Astra and Fable to review this round.
 ```
@@ -167,7 +169,7 @@ Skills marked `user-invocable: true` register as slash commands and are availabl
 - `/session-debug` — Diagnose session issues
 - `/skills-assist` — Consult the skills authoring expert for help creating skills, spec compatibility questions, and skills-vs-agents guidance
 - `/monitor` — Watch something until it finishes, fails, or needs you (e.g. `/monitor the CI run for PR 412, check every 2m, stop after 1h`)
-- `/retrospective` — Review recent work and recommend concrete changes for the next round
+- `/retrospective` (alias `/retro`) — Review recent work and recommend concrete changes for the next round
 
 These commands appear in `/help` and `/skills`. They are powered by the `SkillsDiscovery` capability exposed by the tool-skills module, which the CLI queries at startup to register user-invocable skills.
 

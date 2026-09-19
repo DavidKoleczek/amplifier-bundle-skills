@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from amplifier_module_tool_skills import SkillsDiscovery
-from amplifier_module_tool_skills.discovery import SkillMetadata
+from amplifier_module_tool_skills.discovery import SkillMetadata, discover_skills
 
 
 def _make_skill(
@@ -171,6 +171,21 @@ class TestSkillsDiscoveryGetShortcuts:
         assert "cosam" in result
         assert result["cranky-old-sam"]["name"] == "cranky-old-sam"
         assert result["cosam"]["name"] == "cranky-old-sam"
+
+    def test_curated_retrospective_registers_both_names_without_collision(self):
+        """Read the shipped skill, not a synthetic copy of its frontmatter."""
+        skills = discover_skills(Path(__file__).resolve().parents[3] / "skills")
+        metadata = skills["retrospective"]
+        assert metadata.user_invocable is True
+        assert metadata.shortcut == "retro"
+        assert "retro" not in skills  # Alias, not a duplicate skill.
+        assert [
+            name for name, skill in skills.items() if skill.shortcut == "retro"
+        ] == ["retrospective"]
+
+        shortcuts = SkillsDiscovery(skills).get_shortcuts()
+        assert shortcuts["retro"] is shortcuts["retrospective"]
+        assert shortcuts["retro"]["name"] == "retrospective"
 
     def test_shortcut_equal_to_canonical_name_is_idempotent(self):
         """A skill with shortcut == name produces only one entry, no errors."""
