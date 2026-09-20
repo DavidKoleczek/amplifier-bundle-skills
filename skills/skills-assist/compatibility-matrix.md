@@ -1,185 +1,113 @@
 # Agent Skills Compatibility Matrix
 
-Cross-harness reference for the Agent Skills specification. Use this file when answering questions about which features are portable, which are tool-specific, and how to write skills that work across multiple AI coding tools.
+This matrix separates the portable package format from Amplifier's runtime.
+It does not infer another product's support from a shared field name. Checked
+against the [specification](https://agentskills.io/specification),
+[client guide](https://agentskills.io/client-implementation/adding-skills-support),
+and this repository on 2026-09-20. Consult each destination's current official
+documentation and test its actual session before promising parity.
 
----
+## Format and Execution Boundaries
 
-## Feature Support Matrix
+| Feature | Agent Skills format | Current Amplifier behavior | Portability check |
+|---------|---------------------|----------------------------|-------------------|
+| `name`, `description` | Required | Discovery and visibility | Validate types, lengths, naming, and trigger wording. |
+| `license`, `compatibility`, `metadata` | Optional | Parsed; does not install dependencies | Preserve terms; compatibility is a string, metadata values are strings. |
+| Top-level `version` | Not standard | Legacy informational metadata | Use `metadata.version`. |
+| `allowed-tools` | Experimental string | Fork tool inheritance by **module ID** | Translate identifiers and test enforcement; not a common permission language. |
+| Fork/model-selection fields | Client extensions | Spawn and role-resolution contracts | Check capabilities; `agent` is an archetype hint here. |
+| `disable-model-invocation` | Client extension | User-invoked visibility category | Does not enforce refusal of model-initiated loading. |
+| `user-invocable`, command metadata | Client extensions | Exposed through discovery capability | App must implement dispatch and presentation. |
+| `hooks`, `auto-load` | Client extensions | Lifecycle events and optional integration | Check hook module; no universal lifecycle syntax. |
+| `$ARGUMENTS`, `$0`, `${SKILL_DIR}` | Client extensions | Loader substitutions | Avoid in portable bodies or adapt and test. |
+| Shell preprocessing | Client extension | Disabled inline; trust-gated for forks | Check source provenance and execution policy. |
+| Resources/scripts | Package files | Read/run through available tools | Test paths, dependencies, permissions, and output. |
 
-The table below shows which features are supported by each tool. ✅ = supported, ❌ = not supported, ⚠️ = partial or harness-specific behavior.
+Recognizing `SKILL.md` establishes format compatibility. It does not establish
+access to another application's private tools, cloud documents, live workbook
+sessions, image service, browser UI, or renderer.
 
-| Feature | Amplifier | GitHub Copilot | Claude Code | OpenAI Codex |
-|---------|:---------:|:--------------:|:-----------:|:------------:|
-| **Standard Fields** | | | | |
-| `name` | ✅ | ✅ | ✅ | ✅ |
-| `description` | ✅ | ✅ | ✅ | ✅ |
-| `version` | ✅ | ✅ | ✅ | ✅ |
-| `license` | ✅ | ✅ | ✅ | ✅ |
-| `compatibility` | ✅ | ✅ | ✅ | ✅ |
-| `metadata` | ✅ | ✅ | ✅ | ✅ |
-| **Experimental (agentskills.io)** | | | | |
-| `allowed-tools` | ✅ | ❌ | ⚠️ | ❌ |
-| `hooks` | ✅ | ❌ | ❌ | ❌ |
-| **Amplifier Extensions** | | | | |
-| `context: fork` | ✅ | ❌ | ❌ | ❌ |
-| `model_role` | ✅ | ❌ | ❌ | ❌ |
-| `provider_preferences` | ✅ | ❌ | ❌ | ❌ |
-| `disable-model-invocation` | ✅ | ❌ | ❌ | ❌ |
-| `user-invocable` | ✅ | ❌ | ✅ | ❌ |
-| `auto-load` | ✅ | ❌ | ❌ | ❌ |
-| `agent` | ✅ | ❌ | ❌ | ❌ |
-| **String Substitution & Preprocessing** | | | | |
-| `$ARGUMENTS` | ✅ | ❌ | ✅ | ❌ |
-| `$1` (positional args) | ✅ | ❌ | ✅ | ❌ |
-| `${SKILL_DIR}` | ✅ | ❌ | ✅ | ❌ |
-| Shell preprocessing (`!`cmd``) | ✅ | ❌ | ✅ | ❌ |
-| **Interaction Patterns** | | | | |
-| Slash commands (`/name`) | ✅ | ❌ | ✅ | ❌ |
-| Companion files | ✅ | ✅ | ✅ | ✅ |
-| Discovery paths | ✅ | ✅ | ✅ | ✅ |
-| Model selection | ✅ | ❌ | ❌ | ❌ |
+## Discovery in Amplifier
 
-**Key:** Standard fields (`name`, `description`, `version`, `license`, `compatibility`, `metadata`) are defined by the [agentskills.io](https://agentskills.io) open specification and are portable across all compliant harnesses. All other features are tool-specific extensions. `allowed-tools` and `hooks` are experimental fields in the agentskills.io spec — they are defined but not yet required by compliant harnesses, and support varies.
+The standard does not prescribe installation paths. The client guide describes
+`.agents/skills/` as a sharing convention. Amplifier's current default helper does
+not automatically scan that convention.
 
----
+| Configuration | Behavior |
+|---------------|----------|
+| Default helper | `AMPLIFIER_SKILLS_DIR`, project `.amplifier/skills/`, then `~/.amplifier/skills/`. |
+| Tool configuration `skills` | Ordered local paths, supported Git sources, and `@namespace:path` references; inspect the composed configuration. |
+| Namespace sources | Resolve through `mention_resolver`; may defer to the first `provider:request` if the resolver arrives after mounts. |
+| Multiple source directories | First discovered name wins; order determines overrides. |
+| Runtime overlays | Locally discovered names shadow overlay names. |
 
-## Discovery Paths by Tool
-
-Each tool discovers skills from specific directories. The table below shows the default paths for each tool.
-
-| Tool | Project-Level Path | User-Level Path | Environment Variable |
-|------|--------------------|-----------------|----------------------|
-| **Amplifier** | `.amplifier/skills/` | `~/.amplifier/skills/` | `AMPLIFIER_SKILLS_DIR` |
-| **GitHub Copilot** | `.github/copilot/` | N/A | N/A |
-| **Claude Code** | `.claude/commands/` | `~/.claude/commands/` | N/A |
-| **OpenAI Codex** | `.codex/skills/` | N/A | N/A |
-
-**Notes:**
-- Amplifier supports three discovery paths with priority: `AMPLIFIER_SKILLS_DIR` env var > project-level > user-level.
-- GitHub Copilot reads Markdown instructions from `.github/copilot/` at the project level.
-- Claude Code Skills 2.0 discovers skills (commands) from `.claude/commands/` project-level and `~/.claude/commands/` user-level.
-- OpenAI Codex uses `.codex/skills/` for project-local skill definitions (path subject to change as the tool evolves).
-
----
-
-## Writing Portable Skills
-
-Skills written using only the base Agent Skills specification will load correctly in any compliant harness. This section explains how to write and organize skills for maximum portability.
-
-### Stick to the Base Spec
-
-For skills you want to share across tools, use only the fields defined by the [agentskills.io](https://agentskills.io) open standard:
-
-- `name` — unique kebab-case identifier
-- `description` — trigger conditions and purpose
-- `version` — informational version string
-- `license` — SPDX license identifier
-- `compatibility` — harness constraints
-- `metadata` — arbitrary key-value pairs
-- `allowed-tools` — tool restriction list (experimental — where supported)
-- `hooks` — lifecycle hooks (experimental — where supported)
-
-A skill using only these standard fields will be recognized by any harness that implements the spec. Unrecognized fields are silently ignored by compliant harnesses, so including Amplifier extensions in a Claude Code skill will not cause errors — but those fields will have no effect.
-
-### Avoid Tool-Specific Extensions
-
-Amplifier extensions like `context: fork`, `model_role`, `provider_preferences`, `disable-model-invocation`, `auto-load`, and `agent` are powerful within Amplifier but are not part of the open specification.
-
-Similarly, Amplifier-specific shell preprocessing (`!`command``) and model routing options have no equivalent in GitHub Copilot or OpenAI Codex.
-
-**Non-portable frontmatter example (avoid in shared skills):**
+To opt into shared directories, configure them in the intended override order:
 
 ```yaml
----
-name: my-skill
-description: Analyzes code structure
-context: fork          # Amplifier-only — ignored by other tools
-model_role: reasoning  # Amplifier-only — ignored by other tools
-auto-load: false       # Amplifier-only — ignored by other tools
----
+tools:
+  - module: tool-skills
+    source: git+https://github.com/microsoft/amplifier-bundle-skills@main#subdirectory=modules/tool-skills
+    config:
+      skills:
+        - .amplifier/skills
+        - .agents/skills
+        - ~/.amplifier/skills
+        - ~/.agents/skills
 ```
 
-If you use these fields, the skill still loads in other harnesses — but the enhanced behavior (forked context, model routing) will not apply. Design the skill body to work without those capabilities for full portability.
+Add the bundle's own skill source as appropriate. A client's plugin cache is not
+a portable installation root: select actual entrypoints, resolve version/name
+collisions, and preserve companion files. The `adapt-skill` inventory records
+these decisions.
 
-### Use Companion Files Not Shell Preprocessing
+Symlinks are optional. Amplifier follows them subject to a repository/directory
+boundary check. For canonical `skills/` at project root, a sibling link at
+`.amplifier/skills` targets `../skills`, not `../../skills`. Confirm the resolved
+path remains in the intended repository; avoid cycles. Explicit configured
+sources are often simpler.
 
-Shell preprocessing (`!`command``) injects dynamic content at load time and is supported by Amplifier and Claude Code. However, it is not supported by GitHub Copilot, OpenAI Codex, or other harnesses.
+## Portable Authoring Pattern
 
-**Preferred pattern: companion files**
-
-Companion files (Markdown files placed alongside `SKILL.md`) work everywhere. Instead of injecting content via shell preprocessing, place static reference content in a companion file and instruct the model to read it:
-
-```markdown
-## Setup
-
-Read the project configuration before proceeding:
-
-read_file("${SKILL_DIR}/config-reference.md")
-```
-
-This pattern works in any harness because `read_file` is a model instruction, not a preprocessing directive. Shell preprocessing only works in Amplifier — companion files work everywhere.
-
-**When shell preprocessing is acceptable:** Use `!`command`` only in Amplifier-specific skills where dynamic injection (e.g., `git log`, `node --version`) genuinely adds value and portability is not a goal.
-
-### Cross-Harness Symlink Pattern
-
-Rather than copying skills into each tool's discovery path, create a single canonical skills directory and symlink it into each tool's expected location. This ensures skills stay in sync and are managed in one place.
-
-```bash
-# Create a canonical skills directory at the project root
-mkdir -p skills/
-
-# Symlink into Amplifier's discovery path
-mkdir -p .amplifier/
-ln -s ../../skills .amplifier/skills
-
-# Symlink into Claude Code's discovery path
-mkdir -p .claude/
-ln -s ../../skills .claude/commands
-
-# Symlink into GitHub Copilot's discovery path
-mkdir -p .github/
-ln -s ../../skills .github/copilot
-```
-
-**Notes:**
-- Use relative symlink paths (`../../skills`) to keep the repository self-contained.
-- Each tool discovers the skills from its expected path, but all tools read the same `skills/` directory.
-- Add `skills/` to version control and add the tool-specific paths (`.amplifier/skills`, `.claude/commands`, `.github/copilot`) to `.gitignore` if you prefer, or commit the symlinks directly.
-
-### Portable Skill Template
-
-The template below uses only standard fields from the [agentskills.io](https://agentskills.io) specification. This skill will load in any harness that implements the spec.
+Keep task instructions and relative resource links in the portable core. Label
+host-specific setup and optional adapters in separate references.
 
 ```markdown
 ---
-name: my-portable-skill
-description: "Describe what this skill does and when to invoke it. Write for the agent that will route to it — be specific about trigger conditions and use cases."
-version: 1.0.0
-license: MIT
+name: review-summary
+description: Summarize supplied review notes and identify unresolved decisions. Use when the user asks to turn a review into a decision summary.
 metadata:
-  author: your-name
-  tags: [example, portable]
+  author: example-team
+  version: "1.0.0"
 ---
 
-# My Portable Skill
+# Review Summary
 
-## Task
+Read the user's request and review notes. If the review is missing, ask for it
+before making claims about its contents.
 
-$ARGUMENTS
-
-If no arguments were provided, ask the user what they need help with.
-
-## Instructions
-
-1. Read the user's request from `$ARGUMENTS` above.
-2. Perform the task.
-3. Summarize what you did.
+Use [the summary structure](references/summary-structure.md).
+Distinguish supported decisions from open questions.
 ```
 
-**What makes this portable:**
-- Uses only `name`, `description`, `version`, `license`, and `metadata` — all standard fields.
-- Uses `$ARGUMENTS` for input — supported by Amplifier and Claude Code; gracefully degrades in harnesses that do not support string substitution (the literal `$ARGUMENTS` text will appear, which the model can handle).
-- No `context: fork`, `model_role`, `auto-load`, or other Amplifier extensions.
-- No shell preprocessing — body content is static.
-- Companion files (if needed) should be placed alongside `SKILL.md` and referenced via `read_file`.
+This example does not require invocation syntax, substitutions, named tools,
+a provider, or shell preprocessing. The host still needs a way to read the
+reference. Document script dependencies; portable syntax does not remove setup.
+
+For an Amplifier extension, state the dependency. An inline skill uses the live
+conversation; a fork needs arguments and spawning support. Do not assume unknown
+fields are ignored or that ignoring one preserves the intended behavior.
+
+## Validate the Destination
+
+Use a fresh session in each intended composition, including the actual app host
+when relevant. Check selected source/version, deferred discovery, activation,
+resources, and representative results. Test available and missing adapters.
+Format validation alone does not establish behavior on Claude Code, Codex,
+Copilot, or any other client.
+
+The client guide's collision diagnostics, bounded discovery, explicit activation,
+resource paths, and retention through context management are useful integration
+review points, not claims that this loader or every app already implements them.
+
+See [spec-reference.md](spec-reference.md) for Amplifier semantics and
+[testing-guide.md](testing-guide.md) for the acceptance workflow.
