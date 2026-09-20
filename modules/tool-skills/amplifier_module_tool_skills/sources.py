@@ -367,7 +367,10 @@ async def _resolve_remote_source(source: str, cache_dir: Path) -> Path | None:
 
 
 async def resolve_skill_sources(
-    sources: list[str], cache_dir: Path | None = None
+    sources: list[str],
+    cache_dir: Path | None = None,
+    *,
+    source_origins: dict[Path, str] | None = None,
 ) -> list[Path]:
     """Resolve multiple skill sources to local directory paths.
 
@@ -383,6 +386,9 @@ async def resolve_skill_sources(
     Args:
         sources: List of source strings (local paths or git URLs).
         cache_dir: Directory for caching remote skills.
+        source_origins: Optional output mapping from resolved paths to original
+            source strings. Retains remote provenance after cloning; first
+            source wins when multiple entries resolve to the same directory.
 
     Returns:
         List of resolved local paths (in priority order).
@@ -452,6 +458,8 @@ async def resolve_skill_sources(
         path = results[i]
         if path is not None:
             resolved_paths.append(path)
+            if source_origins is not None:
+                source_origins.setdefault(path.resolve(), sources[i])
 
     logger.info(
         f"Resolved {len(resolved_paths)} skill sources from {len(sources)} configured"
