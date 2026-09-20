@@ -2,7 +2,7 @@
 name: adapt-skill
 disable-model-invocation: true
 description: >-
-  Adapt a skill written for another AI assistant (Claude Code, Cursor, etc.) into a proper
+  Adapt a skill written for another AI assistant (OpenAI Codex, ChatGPT, Claude Code, Cursor) into a proper
   Amplifier SKILL.md. Use when the user wants to adapt a skill, port a skill, convert a
   skill to amplifier, translate a skill, or has a SKILL.md from another platform they want
   to bring into Amplifier.
@@ -26,7 +26,13 @@ with Amplifier extensions and be immediately usable via `/skill-name`.
 ## Inputs
 
 - `$ARGUMENTS`: (Optional) Path to the source skill file or description of
-  what to adapt.
+  what to adapt. Also accepts a skill directory, plugin directory, or plugin cache
+  for a batch migration. The requested destination and host are part of the input.
+
+Honor decisions already authorized in the conversation. For an explicit batch
+port, report the proposed mapping and proceed with routine reversible work;
+ask only about unresolved scope, rights, or consequential capability changes.
+Do not require repeated approval of every file. Keep source packages unchanged.
 
 ## Steps
 
@@ -73,11 +79,27 @@ Read the source SKILL.md and identify:
 - Conventions that don't exist in Amplifier and need alternative approaches
 - The interview or interaction model (does it rely on tools Amplifier doesn't have?)
 
+Inventory the **whole package**, including scripts, references, assets, templates,
+licenses, `agents/openai.yaml`, plugin manifests, and declared MCP dependencies.
+For OpenAI Codex/ChatGPT packages, read
+[the portability reference](references/openai-portability.md). Use the read-only
+inventory helper before copying anything:
+
+```sh
+python "${SKILL_DIR}/scripts/inspect_source.py" /path/to/source > inventory.json
+```
+
+The inventory reports file hashes, versioned source paths, duplicate skill names,
+symlinks, license notices, and known host-bound dependencies. It does not execute
+source scripts or grant permission to copy them. Review reported collisions and
+select versions explicitly; do not combine multiple cached versions by accident.
+Account for every discovered skill, including ones not advertised in this session.
+
 Present a summary of what needs to change — grouped into natural clusters, not
-a wall of text. Let the user confirm the adaptation plan before proceeding.
+a wall of text. Resolve any decisions not already covered by the user's request.
 
 **Success criteria**: You have a clear mapping of source conventions to
-Amplifier equivalents, and the user has confirmed the approach.
+Amplifier equivalents, package provenance, and an authorized approach.
 
 ### 4. Research Source Platform Conventions (if needed)
 
@@ -111,7 +133,9 @@ Walk through these decisions with the user, grouped into natural clusters
   If the skill needs to interview the user, it must be inline.
 - Model-invocable vs user-only (`disable-model-invocation`)
 - `allowed-tools` — minimum set needed, translated to Amplifier tool names
-  (consult skills-assist for the current tool name reference)
+  only in body instructions. For fork restrictions use Amplifier **module IDs**
+  (for example `tool-filesystem tool-bash`), not callable names; omit the field
+  for inline skills. Consult skills-assist and the current loader implementation.
 
 **Save location:**
 - This project (`.amplifier/skills/<name>/SKILL.md`)
@@ -122,7 +146,13 @@ Walk through these decisions with the user, grouped into natural clusters
 - Confirm the adapted steps make sense for Amplifier's tool and agent ecosystem
 - Identify any steps that need fundamental reworking (not just tool name swaps)
 
-**Success criteria**: All design decisions confirmed by the user.
+For each required capability, choose an actual mounted tool, a portable library,
+an optional host adapter, or an explicit unavailable path. Tool-name replacement
+does not implement a connector, renderer, dependency loader, or UI bridge.
+Keep missing optional capabilities out of the successful local-file path.
+
+**Success criteria**: Design decisions are resolved within the authorized scope;
+required dependencies and unsupported paths are recorded.
 
 ### 6. Write the SKILL.md
 
@@ -139,16 +169,24 @@ Key principles (illustrative — consult skills-assist for complete reference):
 - Agent delegation uses `delegate` tool, not platform-specific mechanisms
 - Success criteria on every step
 
-Present the complete SKILL.md in a code block for review before saving.
+Write the complete skill package at the destination, preserving relative resource
+links and applicable notices. Use `${SKILL_DIR}` or the returned `skill_directory`
+for resources, never a source-machine cache path. Bundle skill sources should use
+the bundle's supported namespace (for example `@work:skills`), not the caller's
+working directory. Record source versions/hashes, adaptations, and omissions.
+For an authorized batch, provide a reviewable diff and migration manifest rather
+than pasting every skill in chat. Do not claim proprietary runtimes or retained
+template assets are included when only workflow instructions were ported.
 
-**Success criteria**: The user has reviewed and approved the adapted SKILL.md.
+**Success criteria**: The adapted package is reviewable, resources resolve, and
+every source skill has a documented disposition.
 
 ### 7. Test the Skill
 
 Before committing, verify the skill works:
 
-1. Save the skill to `.amplifier/skills/<name>/SKILL.md` (immediately
-   discoverable, no config changes needed).
+1. Save in the authorized destination. Test its configured discovery source from
+   an unrelated working directory as well as the project directory.
 
 2. In the same session, call `load_skill("<name>")` and verify:
    - The skill loads without errors
@@ -164,6 +202,16 @@ Before committing, verify the skill works:
      names, and proper structure
 
 4. If issues are found, fix the SKILL.md and re-test.
+
+5. For a batch, load every skill with the real tool-skills implementation and
+   verify companion links and retained-asset hashes. Exercise representative
+   document, spreadsheet, presentation, and visualization workflows as applicable.
+   Check optional connector absence and duplicate names. Use an isolated host for
+   host acceptance; do not change a user's live configuration or replay history.
+
+If delegation or a live host is unavailable, run deterministic package/loading
+checks and report behavioral/browser acceptance as unverified. A parsed Markdown
+file is not proof that its scripts, credentials, native app, or UI work.
 
 **Success criteria**: The skill loads, the test agent follows its instructions,
 and the output conforms to Amplifier conventions.
