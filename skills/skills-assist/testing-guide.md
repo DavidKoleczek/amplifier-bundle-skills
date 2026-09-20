@@ -1,5 +1,27 @@
 # Skills Testing Guide
 
+Use separate evidence for package validity, discovery, execution, routing, and
+host presentation. Passing one layer does not establish the others. The
+[Agent Skills evaluation guide](https://agentskills.io/skill-creation/evaluating-skills)
+describes controlled comparisons; the
+[description guide](https://agentskills.io/skill-creation/optimizing-descriptions)
+focuses on activation.
+
+## Package checks
+
+Check names, descriptions, environment requirements, relative resource closure,
+and licensing before loading executable content. The upstream `skills-ref`
+validator accepts the standard fields only; Amplifier extension fields need
+separate validation. If validating a standard-field projection, label it as such
+and retain the original file for actual loader tests. A passing projection is
+not a passing unmodified package. Never strip extension fields from production
+skills just to make a standard-only checker green.
+
+Test configured discovery with an unrelated working directory, workspace/user
+name collisions, and the composed bundle's namespace resolver. Discovery must
+not run scripts. Validate script interfaces with `--help`, missing dependencies,
+invalid input, and retry/collision cases appropriate to their effects.
+
 ## Testing Skills Locally Before Committing
 
 ### Quick Validation
@@ -69,3 +91,35 @@ delegate(
 4. If issues found, fix and re-test
 5. Move to final destination (bundle, personal, project)
 6. Commit and push
+
+## Execution cases and receipts
+
+For each migrated skill, define a small realistic task, fixture inputs, and
+observable expectations. Run it in a fresh session with the actual skill loader
+and available tools. Keep the development conversation out of the test context.
+Save generated outputs outside the installed package. Record:
+
+- Skill and source revision; host, provider/model, and mounted tools.
+- Input case, whether the skill was actually loaded, and tool failures.
+- Output assertions with evidence, elapsed time, and usage when available.
+- Separate statuses for execution, rendering, visual inspection, and adapters.
+
+Read back generated files and calculate expected results independently. Check
+edits preserve originals. For UI artifacts, use the consuming host's real
+rendering and interaction path. Missing image/Excel/cloud adapters should produce
+a truthful unavailable result; that verifies handling, not the adapter itself.
+Store credentials and raw private session data outside the repository.
+
+## Routing and quality comparisons
+
+Explicitly asking for a skill tests its execution but not natural discovery.
+Test ordinary prompts with the full catalog, including relevant requests and
+near misses that share words but belong to another skill. Observe actual loads,
+not the model's statement that it would use a skill. Repeat cases when estimating
+activation rates; a single smoke test is not a reliability measurement.
+
+When claiming improved quality or efficiency, compare the same task with the
+previous skill version or without the skill, using separate fresh sessions and
+the same provider/tool configuration. Grade outputs against concrete assertions,
+review the traces, and retain failures as well as passes. Re-run affected cases
+after a correction. Report a small acceptance run as such, not as a benchmark.

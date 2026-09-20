@@ -7,13 +7,6 @@ description: >-
   skill to amplifier, translate a skill, or has a SKILL.md from another platform they want
   to bring into Amplifier.
 user-invocable: true
-allowed-tools:
-  - read_file
-  - write_file
-  - glob
-  - grep
-  - bash
-  - delegate
 model_role: general
 ---
 
@@ -178,6 +171,14 @@ For an authorized batch, provide a reviewable diff and migration manifest rather
 than pasting every skill in chat. Do not claim proprietary runtimes or retained
 template assets are included when only workflow instructions were ported.
 
+Validate the portable fields against the current Agent Skills specification;
+validate Amplifier extensions separately with the real loader. The reference
+validator rejects extension keys, so a standard-only metadata projection is a
+partial check, never proof the original file passes an unmodified validator.
+Use `compatibility` for actual runtime requirements and string-valued `metadata`
+for provenance. Keep the destination's branch/source policy; a tested revision
+is evidence, not automatically a source pin.
+
 **Success criteria**: The adapted package is reviewable, resources resolve, and
 every source skill has a documented disposition.
 
@@ -208,6 +209,13 @@ Before committing, verify the skill works:
    document, spreadsheet, presentation, and visualization workflows as applicable.
    Check optional connector absence and duplicate names. Use an isolated host for
    host acceptance; do not change a user's live configuration or replay history.
+
+6. Exercise every migrated skill on a bounded synthetic task when execution is
+   available. Record the loaded skill, task, mounted capabilities, output checks,
+   duration, and failure or limitation. Independently inspect generated files;
+   the agent's completion message is not a validator. Separate optional-adapter
+   absence from successful execution. Follow skills-assist's testing guide for
+   trigger tests and baseline comparisons when claiming routing or quality gains.
 
 If delegation or a live host is unavailable, run deterministic package/loading
 checks and report behavioral/browser acceptance as unverified. A parsed Markdown

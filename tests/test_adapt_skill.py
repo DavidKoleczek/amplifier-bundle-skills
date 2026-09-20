@@ -63,12 +63,10 @@ def test_frontmatter_model_role():
     )
 
 
-def test_frontmatter_allowed_tools_includes_delegate():
-    """allowed-tools must include delegate (for skills-assist and foundation:explorer)."""
+def test_inline_skill_does_not_advertise_a_tool_allowlist():
+    """Inline skills inherit tools; a frontmatter allowlist would imply false enforcement."""
     fm = parse_frontmatter(read_skill_md())
-    assert "delegate" in fm, (
-        "allowed-tools must include 'delegate' for skills-assist consultation"
-    )
+    assert "allowed-tools:" not in fm
 
 
 def test_frontmatter_description_has_trigger_phrases():

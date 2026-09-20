@@ -64,7 +64,9 @@ def _detect_fork_session(coordinator: "ModuleCoordinator") -> bool:
 
 
 async def _resolve_skill_sources(
-    config: dict[str, Any], coordinator: "ModuleCoordinator"
+    config: dict[str, Any],
+    coordinator: "ModuleCoordinator",
+    source_origins: dict[Path, str] | None = None,
 ) -> tuple[list[Path], list[str]]:
     """Resolve skill sources from config, handling local paths, git URLs, and @-mentions.
 
@@ -87,6 +89,8 @@ async def _resolve_skill_sources(
     Args:
         config: Tool configuration dict.
         coordinator: Module coordinator for accessing global config.
+        source_origins: Optional output mapping preserving remote URLs after
+            they resolve to local cache directories.
 
     Returns:
         Tuple of (resolved local directory paths, pending @-mention sources).
@@ -175,7 +179,7 @@ async def _resolve_skill_sources(
     if has_remote:
         # Resolve all sources (handles both local and remote)
         logger.info(f"Resolving {len(sources)} skill sources (includes remote)")
-        resolved = await resolve_skill_sources(sources)
+        resolved = await resolve_skill_sources(sources, source_origins=source_origins)
     else:
         # All local - just expand paths
         resolved = []
@@ -233,9 +237,17 @@ async def mount(
     coordinator.register_capability("observability.events", obs_events)
 
     # Resolve skill sources (handles local paths, git URLs, and @-mentions)
-    resolved_dirs, pending_mentions = await _resolve_skill_sources(config, coordinator)
+    source_origins: dict[Path, str] = {}
+    resolved_dirs, pending_mentions = await _resolve_skill_sources(
+        config, coordinator, source_origins
+    )
 
     tool = SkillsTool(config, coordinator, resolved_dirs)
+    for metadata in tool.skills.values():
+        origin = source_origins.get(Path(metadata.source).resolve())
+        if origin is not None and is_remote_source(origin):
+            metadata.source = origin
+            metadata.trusted = False
     tool._pending_mention_sources = pending_mentions
 
     # Detect whether this session is a forked-skill child session. See the
@@ -795,6 +807,10 @@ Discovery: configured directories (workspace, user, custom paths), first-match-w
                 )
 
             new_skills = discover_skills(resolved_path)
+            if is_remote_source(source_str):
+                for metadata in new_skills.values():
+                    metadata.source = source_str
+                    metadata.trusted = False
 
             # Merge with first-match-wins: existing skills take priority
             added = []
@@ -1190,7 +1206,7 @@ Discovery: configured directories (workspace, user, custom paths), first-match-w
             # resolve inside the fork — the fork cannot see the parent
             # conversation, so this is its only line to the user's intent.
             # Remote-source skills are untrusted — block shell execution.
-            is_trusted = not is_remote_source(metadata.source)
+            is_trusted = metadata.trusted and not is_remote_source(metadata.source)
             processed_body = await preprocess(
                 body,
                 skill_dir=metadata.path.parent,

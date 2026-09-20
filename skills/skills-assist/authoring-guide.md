@@ -20,27 +20,41 @@ skills/
 
 ### Discovery Paths
 
-Amplifier searches for skills in this order (first match wins):
+Discovery depends on the composed `tool-skills` configuration. With no usable
+configured sources, the default directories are searched in this order:
 
 | Priority | Path | Notes |
 |----------|------|-------|
-| 1 (highest) | `.amplifier/skills/` | Workspace-scoped, project-specific skills |
-| 2 | `~/.amplifier/skills/` | User-scoped skills available in all sessions |
-| 3 | `AMPLIFIER_SKILLS_DIR` | Environment variable override for custom locations |
-| 4 | Bundle skills dirs | Skills shipped with installed bundles |
+| 1 (highest) | `AMPLIFIER_SKILLS_DIR` | Environment variable override |
+| 2 | `.amplifier/skills/` | Workspace-scoped, project-specific skills |
+| 3 | `~/.amplifier/skills/` | User-scoped skills |
+
+Configured sources can replace these defaults; do not assume a host scans a
+directory merely because it exists. Put intended project/user paths explicitly
+in the behavior's `tools[].config.skills`. The shared `.agents/skills` convention
+is optional host composition, not a required path in the Agent Skills format.
+For interoperability, configure project paths before user paths and document
+collision precedence. Inspect the loaded `skill_directory` to identify the winner.
 
 ### Git URL Sources
 
 Skills can also be loaded from git repositories:
 
 ```yaml
-# In settings.yaml or amplifier config
-skills_sources:
-  - git+https://github.com/org/skills-repo.git
-  - git+https://github.com/org/skills-repo.git@v1.2.0  # pin a tag
+# Within the tool-skills module's config
+skills:
+  - .amplifier/skills
+  - .agents/skills
+  - ~/.amplifier/skills
+  - ~/.agents/skills
+  - git+https://github.com/org/skills-repo.git@main#subdirectory=skills
 ```
 
 Git sources are cloned locally and searched the same way as local directories.
+Follow the destination's source policy. Record resolved revisions in evidence;
+do not introduce commit or tag constraints into a branch-tracking ecosystem.
+For bundle-owned resources, prefer the bundle's `@namespace:skills` source and
+preserve Foundation namespace roots through composition and session preparation.
 
 ---
 
@@ -67,12 +81,12 @@ The `name` and `description` fields are the only required frontmatter fields. Ev
 |-------|------|---------|-------------|
 | `name` | string | — | **Required.** Unique identifier, kebab-case. Used as the `/shortcut` command name when `user-invocable: true`. |
 | `description` | string | — | **Required.** What the skill does and when to invoke it. In budget mode, model-invocable routing detail is rendered into the skills-visibility block on every request; `disable-model-invocation: true` entries retain only their name in the manual section. **Cap: 400 chars, ERROR at 800.** Shape: trigger first, then USE WHEN, then DO NOT USE WHEN naming the alternative. Zero `<example>`/`<commentary>`. Canonical rules: `foundation:context/shared/description-authoring-principles.md`; enforced by `foundation:recipes/validate-bundle-repo.yaml` Phase 2.82. Write for the agent reading it, not a human menu. |
-| `context` | enum: `fork` | `null` (none) | When set to `fork`, the skill runs in a fresh context window that does not inherit the caller's conversation history. Ideal for context-sink patterns where you want a clean slate. |
-| `model_role` | string | `general` | Preferred model role for executing this skill. Matched against the active routing matrix. Common values: `general`, `reasoning`, `coding`, `critique`. Only applies when `context: fork`. |
+| `context` | enum: `fork` | `null` (none) | Requests a child with no parent conversation by default. Explicit context inheritance options can change that. Requires host spawning support for isolation. |
+| `model_role` | string or list | unset | Preferred role resolved by the mounted routing capability for a fork. The current resolver uses only the first item of a list. |
 | `user-invocable` | boolean | `false` | When `true`, registers the skill as a `/name` shortcut that users can invoke directly. Also lists the skill in `/skills` output. |
 | `allowed-tools` | string | all tools | Space-separated list of Amplifier **module IDs** the forked context is allowed to use (e.g. `tool-filesystem tool-search tool-bash`). NOT Claude Code tool names. A name matching no module yields an empty tool set. Omit to inherit the full parent tool surface. Only applies when `context: fork`. |
 | `disable-model-invocation` | boolean | `false` | When `true`, the model does not auto-invoke the skill. Budget-mode catalogs retain its name only under `Manual skills (load by name; /name when user-invocable):`. `user-invocable: true` is required for `/name`; every manual skill can still be loaded by exact name. |
-| `auto-load` | boolean | `false` | When `true`, the skill's body is automatically injected into the system prompt at session startup. Use sparingly — only for skills that must always be active. |
+| `auto-load` | boolean | `false` | With nonempty `hooks`, emits a load event at mount. Does not automatically inject every skill body into the prompt. |
 | `license` | string | — | SPDX license identifier for the skill (e.g., `MIT`, `Apache-2.0`). Informational only. |
 | `version` | string | — | Skill version string (e.g., `1.0.0`). Informational only. |
 
@@ -96,23 +110,53 @@ Skills are loaded lazily to conserve context. The skill loading system has three
 
 ## Best Practices
 
-### From the Agent Skills Specification
+### Standard Format and Portable Authoring
+
+The [Agent Skills specification](https://agentskills.io/specification) defines
+the package format, not Amplifier's tool execution or UI. Match `name` to its
+directory (1–64 lowercase alphanumeric/hyphen characters, no edge or repeated
+hyphens). `description` is a nonempty string up to 1024 characters; the stricter
+400/800 guidance above is Amplifier's authoring budget. `compatibility` is an
+optional string up to 500 characters and `metadata` maps strings to strings.
+Top-level `version`, `hooks`, and execution fields are host extensions. Validate
+portable fields separately from extension behavior; see the testing guide.
 
 1. **Write descriptions for agents, not humans.** The description field is injected into system prompt context — it tells a routing agent when and why to invoke this skill. Be specific about use cases: "Use when tasks require analyzing images" is better than "Image analysis skill."
 
 2. **Keep the body focused.** A skill body should do one thing well. Avoid combining multiple unrelated workflows in a single SKILL.md. If your skill has three distinct phases, those phases should be documented in order within the body — not split across three skills.
 
-3. **Use `$ARGUMENTS` for user input.** When a skill accepts parameters (file paths, topic names, feature descriptions), reference them via `$ARGUMENTS` in the body. The harness substitutes the user's input at invocation time. Guard against empty arguments with an explicit check.
+3. **Keep inputs explicit.** State required inputs and what to do when they are
+   missing. `$ARGUMENTS` substitution is an Amplifier extension, not part of the
+   base format; check destination behavior when exporting to another client.
 
 4. **Companion files over inline content.** Large reference tables, setup instructions, code examples, and troubleshooting guides belong in companion files, not inline in SKILL.md. This keeps the skill body readable and avoids loading large content into every invocation context.
 
+The [authoring guidance](https://agentskills.io/skill-creation/best-practices)
+also supports concise procedures derived from actual work. Keep the entrypoint
+under roughly 500 lines/5000 tokens; say when each resource is needed. Prefer
+one working default over a long menu, and add specific corrections observed in
+execution. Reference files directly from the entrypoint to avoid hidden chains.
+
+For [bundled scripts](https://agentskills.io/skill-creation/using-scripts), expose
+noninteractive flags and `--help`, document prerequisites, return useful errors
+and meaningful exit codes, and keep structured output separate from diagnostics.
+Plan for retries and collisions. Resolve paths from the loaded skill directory;
+a subprocess does not necessarily start there. Test in the worker environment,
+not just the host environment that reports package metadata.
+
 ### Amplifier-Specific Best Practices
 
-5. **Use `context: fork` for context-sink patterns.** When your skill is a knowledge consultant, orchestrator, or debugging tool that should not see the user's conversation history, set `context: fork`. This gives the forked agent a clean context window with only the skill body and the user's arguments.
+5. **Use `context: fork` for independent work.** Knowledge consultants can avoid
+   parent conversation by default. Check explicit inheritance options and the
+   host's actual spawn capability before claiming isolation.
 
 6. **Set `model_role` to match the task.** Amplifier routes forked contexts to specialized model roles. Use `reasoning` for architecture decisions, `critique` for code review, `coding` for implementation work, `general` for broad consultation. Incorrect role selection wastes model capacity.
 
-7. **Use `allowed-tools` to restrict surface area.** Values are Amplifier **module IDs** — not Claude Code tool names and not callable tool names. A skill that needs read-only filesystem access should set `allowed-tools: tool-filesystem tool-search`. Add `tool-bash` for shell commands, `tool-delegate` for spawning subagents, `tool-skills` for loading skills. A name matching no module yields an **empty** tool set. If you don't need to restrict the surface, omit the field entirely — the fork then inherits the full parent tool surface.
+7. **Use `allowed-tools` to restrict fork inheritance.** Values are module IDs,
+   not callable names. `tool-filesystem` includes writes; it is not a read-only
+   permission. Nonmatching IDs inherit no tools, but an empty list is treated as
+   omitted and inherits tools. Inspect the child's actual tools and use host
+   policy for access control. Inline skills should omit the field.
 
 8. **Validate `$ARGUMENTS` at the top of the body.** If your skill requires arguments, add a guard check as the first step: check whether `$ARGUMENTS` is empty, and if so output a usage example and stop. Worker agents spawned from orchestrators cannot ask the user for missing information — the orchestrator must ensure arguments are complete before delegating.
 
@@ -161,8 +205,8 @@ also filters fork-context skills from child session visibility.
 
 ## Trigger Phrase Placement
 
-The `description` field is the ONLY signal the model sees before deciding whether
-to load a skill. Trigger phrases, "Use when..." guidance, and example user messages
+The `description` field is the primary routing signal alongside the skill name.
+Trigger phrases, "Use when..." guidance, and example user messages
 MUST go in the description — not in the skill body.
 
 **Why:** The visibility hook injects skill descriptions into the LLM context before
