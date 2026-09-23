@@ -48,12 +48,17 @@ usage guidance:
   (`gemini-3.1-flash-tts-preview`); audition a short passage to choose the voice.
   Master the resulting speech with aud.
 
-Use FFmpeg/ffprobe for clip preparation and inspection, and small scripts for
-repeatable builds. Supply or create music separately from audio mastering.
+Call the smart tool that owns each step: Stories for the storyboard and
+narration, Showrun for recordings, aud for mastering, Unfold for animation, and
+vid for cutting, assembly, and render verification. Read a tool's help before
+its first use. Do not reimplement a tool's work with hand-written FFmpeg
+commands or scripts; use FFmpeg/ffprobe directly only for clip preparation and
+inspection the tools do not cover, and small scripts only to chain tool calls
+into repeatable builds. Supply or create music separately from audio mastering.
 
 ## Workflow
 
-### 1. Write the storyboard
+### 1. Create the storyboard with Stories
 
 Inspect existing scripts, recordings, artwork, and credits. Establish the
 audience, takeaway, runtime limit, and destination; ask only for missing
@@ -64,25 +69,29 @@ action. Give each demo one spoken point and footage that proves it. Reuse chosen
 branding; otherwise compare a few small layout previews and voice/music samples
 before applying a direction throughout.
 
-Write `storyboard.md` in the project and share it. The user may edit it or leave
-it to the agent; either way it is the source of truth for every later step.
-Update it whenever direction changes, and rebuild from it. Each scene lists
-what is on screen and its narration. On screen is a recording excerpt, an
-Unfold animation such as an opening title or concept diagram, a title card, or
-a combination. Text shown on screen, such as titles, animation labels, and
-subtitles, is optional and listed separately.
+Build the storyboard in Stories. Use `create-storyboard` to import a script the
+user already has, or `generate-storyboard` to develop one from the brief. Set
+`explore` only when the user asks to compare directions. Each panel is one
+scene:
 
-```markdown
-# <Title>
+- `id`: stable scene ID.
+- `action`: the point the scene makes.
+- `visual`: what is on screen: a recording excerpt with file and in/out times,
+  an Unfold animation such as an opening title or concept diagram, a title
+  card, or a combination.
+- `narration`: the spoken line.
+- `notes` (optional): on-screen text, such as titles, animation labels, and
+  subtitles.
+- `production_requirements` (optional): recordings or animations still to make.
+- `asset_id` (optional): a still frame from the recording.
 
-Length: 1:00. Format: 1080p, 30 fps.
-
-## <Scene ID>
-
-On-screen: <recording file, in to out; or Unfold animation and reveal order; or title card>
-Text (optional): <titles, animation labels, subtitles>
-Narration: <spoken line>
-```
+A direction holds up to eight panels; for a longer video, make each panel a
+section and list its scenes in `visual` and `narration`. Share the storyboard
+through the Stories dashboard so the user can comment or edit, or leave it to
+the agent. Either way it is the source of truth for every later step. Apply
+changes with `revise-storyboard` and rebuild from the latest revision. If
+Stories is unavailable on the platform, write the same fields per scene to
+`storyboard.md`.
 
 Use the scene IDs to connect on-screen sources, narration, and review
 timestamps. Preserve original assets, animation source, and generation
@@ -95,8 +104,7 @@ narration line, and the total fits the runtime budget.
 
 Use recordings the user supplies, or make recordings of what the user wants to
 show. Long, unedited captures are fine; step 4 cuts them down. Make recordings
-with real screen capture of the thing running, for example with Showrun for a
-web app. Seed realistic demo data first so screens do not start empty. Only
+with real screen capture of the thing running, using Showrun for a web app. Seed realistic demo data first so screens do not start empty. Only
 substitute simulated or animated footage when the user explicitly asks not to
 use real screen capture. If a storyboard beat cannot be recorded because the
 thing lacks it, tell the user rather than faking it.
@@ -121,7 +129,7 @@ clipping, and leaves the complete video within its runtime budget.
 
 ### 4. Cut demos around the result
 
-Show enough setup to explain the action, meaningful progress, and a readable
+Cut with vid. Show enough setup to explain the action, meaningful progress, and a readable
 result. Remove waiting and repetition; accelerate only where viewers can still
 follow. Judge the excerpt at delivery size and speed.
 
@@ -165,7 +173,8 @@ rate, and audio, with aligned transitions and intelligible speech.
 
 ### 7. Review and revise the complete video
 
-Generate a contact sheet and scene navigation from the rendered export. Watch
+Verify the render with vid, then generate a contact sheet and scene navigation
+from the export. Watch
 and listen end to end, then inspect transition boundaries and the final seconds
 for black flashes, clipped speech, frozen endings, and abrupt cutoffs. Tool
 verification cannot establish whether the video looks and sounds right.
