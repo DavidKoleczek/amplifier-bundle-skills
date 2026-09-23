@@ -175,20 +175,38 @@ rate, and audio, with aligned transitions and intelligible speech.
 
 ### 7. Review and revise the complete video
 
-Check the render with `vid verify`, then generate a contact sheet and scene
-navigation from the export. Watch and listen end to end, then inspect transition boundaries and the final seconds
-for black flashes, clipped speech, frozen endings, and abrupt cutoffs. Tool
-verification cannot establish whether the video looks and sounds right.
+Check the render with `vid verify`. Watch and listen end to end, then inspect
+transition boundaries and the final seconds for black flashes, clipped speech,
+frozen endings, and abrupt cutoffs. Tool verification cannot establish whether
+the video looks and sounds right.
 
 Keep one canonical video for feedback, addressed by scene or timestamp. Revise
 the saved vid plan and rebuild only affected assets before rendering the full
 export again.
 
-Deliver the MP4 as the primary output and present it so the user can watch it
-directly, as an inline player or a path to open. Keep review aids, the
-storyboard, original assets, animation sources, and rebuild commands with
-prerequisites in the project rather than bundling them into an archive. Report
-what was actually verified and any viewing or listening checks that still need
+Create a local HTML review player for the canonical MP4. Include:
+
+- A video player with playback, seeking, volume, and fullscreen controls.
+- Selectable closed captions, enabled by default when captions are requested.
+- Scene buttons labeled with each scene's start time and title from the
+  storyboard. Clicking a button seeks to that scene and starts playback.
+- Links to download the MP4 and caption file, and to view the storyboard.
+- A responsive layout using the video's branding, with the player above the
+  scene buttons.
+
+Save the player as `index.html` alongside the video and caption files. Serve it
+on localhost and open it for review. Start paused so the user controls playback.
+Keep one canonical video and update the player's scene timings whenever the edit
+changes.
+
+Verify that the video plays, captions display correctly, and every scene button
+seeks to the intended moment. Deliver the MP4 as the primary artifact and link
+the review player as the feedback surface. The review player is supporting HTML
+created by the coordinating agent; it does not need to come from a smart tool.
+
+Keep review aids, the storyboard, original assets, animation sources, and
+rebuild commands with prerequisites in the project rather than bundling them
+into an archive. Report what was actually verified and any viewing or listening checks that still need
 the user.
 
 **Success criteria:** The complete video meets the brief and can be revised
