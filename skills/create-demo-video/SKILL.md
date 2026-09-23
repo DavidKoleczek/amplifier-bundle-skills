@@ -50,13 +50,15 @@ usage guidance:
 
 Call the smart tool that owns each step: Stories for the storyboard and
 narration, Showrun for recordings, aud for mastering, Unfold for animation, and
-vid for cutting, assembly, and render verification. Read a tool's help before
-its first use. Do not reimplement a tool's work with hand-written FFmpeg
-commands or scripts; use FFmpeg/ffprobe directly only for clip preparation and
-inspection the tools do not cover, and small scripts only to chain tool calls
-into repeatable builds.
+vid for video edits. Do not reimplement a tool's work with hand-written
+commands or scripts; use scripts only to chain smart tool capabilities into repeatable
+builds.
 
 ## Workflow
+
+Before step 1, run `--help` for each smart tool the video will use: `stories`,
+`showrun`, `aud`, `unfold`, and `vid`. Follow what the help says about setup,
+capabilities, and arguments in every later step.
 
 ### 1. Create the storyboard with Stories
 
@@ -127,8 +129,8 @@ clipping, and leaves the complete video within its runtime budget.
 
 ### 4. Cut demos around the result
 
-Cut with vid. Show enough setup to explain the action, meaningful progress, and a readable
-result. Remove waiting and repetition; accelerate only where viewers can still
+Cut with vid's trim, cut, and retime verbs. Show enough setup to explain the
+action, meaningful progress, and a readable result. Remove waiting and repetition; accelerate only where viewers can still
 follow. Judge the excerpt at delivery size and speed.
 
 Preserve the full recording and aspect ratio unless a deliberate crop is wanted.
@@ -157,10 +159,11 @@ and holds a complete final composition.
 
 ### 6. Assemble and mix
 
-Prepare compatible clips, then generate and save vid's native edit plan. Align
-durations to whole frames and account for crossfade overlaps so later narration
-does not drift. Extra outgoing footage can compensate for an overlap. Bound audio
-padding to the picture's duration without cutting speech.
+Build the whole video as one vid pipeline: stitch the scenes with vid
+transitions, lay the narration in with vid's audio verbs, and render once.
+Account for transition overlaps so later narration does not drift; extra
+outgoing footage can compensate for an overlap. Keep audio within the picture's
+duration without cutting speech.
 
 Mute recording audio only where voiceover replaces it. Listen to the complete
 mix, including the handoff between recorded and synthetic voices.
@@ -170,16 +173,14 @@ rate, and audio, with aligned transitions and intelligible speech.
 
 ### 7. Review and revise the complete video
 
-Verify the render with vid, then generate a contact sheet and scene navigation
-from the export. Watch
-and listen end to end, then inspect transition boundaries and the final seconds
+Check the render with `vid verify`, then generate a contact sheet and scene
+navigation from the export. Watch and listen end to end, then inspect transition boundaries and the final seconds
 for black flashes, clipped speech, frozen endings, and abrupt cutoffs. Tool
 verification cannot establish whether the video looks and sounds right.
 
-Keep one canonical video for feedback, addressed by scene or timestamp. Cache
-unchanged scenes and rebuild only affected assets before assembling the full
-export. Replace audio without re-encoding video only when visuals and timing
-are unchanged and the existing export still matches the project.
+Keep one canonical video for feedback, addressed by scene or timestamp. Revise
+the saved vid plan and rebuild only affected assets before rendering the full
+export again.
 
 Deliver the MP4 as the primary output and present it so the user can watch it
 directly, as an inline player or a path to open. Keep review aids, the
