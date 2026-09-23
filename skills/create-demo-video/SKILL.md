@@ -1,15 +1,26 @@
 ---
 name: create-demo-video
 description: >-
-  Build or revise a narrated demo showcase with vid, aud, and unfold. Use when
-  combining recordings, narration, and animation into a reproducible video.
-  For a single trim or audio cleanup, use the relevant tool directly.
+  Produce a narrated demo video that shows something the user made or built,
+  cut from recordings they supply or recordings made to their direction. Use
+  when showing a product, feature, tool, or project in action. Not for
+  slide-style explainers; for a single trim or audio cleanup, use the relevant
+  tool directly.
 ---
 
 # Create a Demo Video
 
-Deliver a finished MP4 and an editable project. Settle the story and narration
-before detailed visual timing, then review one canonical export end to end.
+Show the thing working. Build every demo scene from a recording of it, never
+from slides or static screenshots standing in for it. Settle the storyboard and
+narration before detailed visual timing, then review one canonical export end
+to end.
+
+## Harness
+
+Drive this workflow from a harness running a strong reasoning model, such as
+the Amplifier CLI with `gpt-6-astra` at high reasoning effort or Claude Opus 5.5.
+The workflow depends on sustained judgment across footage, narration timing,
+and review.
 
 ## Tools
 
@@ -32,6 +43,7 @@ usage guidance:
 - **vid:** edit plans, assembly, rendering, and export verification.
 - **aud:** speech cleanup, mastering, and loudness/peak verification.
 - **unfold:** silent animations with editable source.
+- **showrun:** recorded walkthroughs of a running web app.
 - **Stories:** storyboards and speech synthesis. Prefer Gemini 3.1 TTS
   (`gemini-3.1-flash-tts-preview`); audition a short passage to choose the voice.
   Master the resulting speech with aud.
@@ -41,25 +53,58 @@ repeatable builds. Supply or create music separately from audio mastering.
 
 ## Workflow
 
-### 1. Define the story and delivery
+### 1. Write the storyboard
 
 Inspect existing scripts, recordings, artwork, and credits. Establish the
-audience, takeaway, runtime limit, output format, and destination; ask only for
-missing decisions. Use 1080p at 30 fps unless the brief calls for another format.
+audience, takeaway, runtime limit, and destination; ask only for missing
+decisions. Use 1080p at 30 fps unless the brief calls for another format.
 
 Start with a hook, a tour of visible results, a short synthesis, and a closing
 action. Give each demo one spoken point and footage that proves it. Reuse chosen
 branding; otherwise compare a few small layout previews and voice/music samples
 before applying a direction throughout.
 
-Keep copy and timeline settings outside rendering code. Use stable scene IDs to
-connect footage, narration, and review timestamps. Preserve original assets,
-animation source, and generation settings; separate caches from rebuild inputs.
+Write `storyboard.md` in the project and share it. The user may edit it or leave
+it to the agent; either way it is the source of truth for every later step.
+Update it whenever direction changes, and rebuild from it. Each scene lists
+what is on screen and its narration. On screen is a recording excerpt, an
+Unfold animation such as an opening title or concept diagram, a title card, or
+a combination. Text shown on screen, such as titles, animation labels, and
+subtitles, is optional and listed separately.
 
-**Success criteria:** Each scene has a purpose and source, with a runtime budget
-and selected visual/audio direction.
+```markdown
+# <Title>
 
-### 2. Finish narration before timing visuals
+Length: 1:00. Format: 1080p, 30 fps.
+
+## <Scene ID>
+
+On-screen: <recording file, in to out; or Unfold animation and reveal order; or title card>
+Text (optional): <titles, animation labels, subtitles>
+Narration: <spoken line>
+```
+
+Use the scene IDs to connect on-screen sources, narration, and review
+timestamps. Preserve original assets, animation source, and generation
+settings; separate caches from rebuild inputs.
+
+**Success criteria:** Each scene has a purpose, an on-screen source, and a
+narration line, and the total fits the runtime budget.
+
+### 2. Get the recordings
+
+Use recordings the user supplies, or make recordings of what the user wants to
+show. Long, unedited captures are fine; step 4 cuts them down. Make recordings
+with real screen capture of the thing running, for example with Showrun for a
+web app. Seed realistic demo data first so screens do not start empty. Only
+substitute simulated or animated footage when the user explicitly asks not to
+use real screen capture. If a storyboard beat cannot be recorded because the
+thing lacks it, tell the user rather than faking it.
+
+**Success criteria:** Every demo scene in the storyboard maps to a recording
+that shows it happening.
+
+### 3. Finish narration before timing visuals
 
 Clean supplied speech or generate one clip per scene with consistent voice
 settings. Use aud to master it; -16 LUFS and a -1.5 dBTP ceiling are useful
@@ -74,7 +119,7 @@ new timing cues, including any timestamp-based breath or pause edits.
 **Success criteria:** Narration sounds consistent, fits each scene without
 clipping, and leaves the complete video within its runtime budget.
 
-### 3. Cut demos around the result
+### 4. Cut demos around the result
 
 Show enough setup to explain the action, meaningful progress, and a readable
 result. Remove waiting and repetition; accelerate only where viewers can still
@@ -89,7 +134,7 @@ to understand them.
 **Success criteria:** Every excerpt supports its spoken point without hiding
 content or rushing past the useful result.
 
-### 4. Animate to the measured narration
+### 5. Animate to the measured narration
 
 Give Unfold the meaning, exact labels, palette, canvas size, frame rate, duration,
 reveal timestamps, and final hold. Request silent output. For explanations, build
@@ -104,7 +149,7 @@ collisions, misleading arrows, small text, and blank frames.
 **Success criteria:** The animation matches the narration, remains readable,
 and holds a complete final composition.
 
-### 5. Assemble and mix
+### 6. Assemble and mix
 
 Prepare compatible clips, then generate and save vid's native edit plan. Align
 durations to whole frames and account for crossfade overlaps so later narration
@@ -118,7 +163,7 @@ including the handoff between recorded and synthetic voices.
 **Success criteria:** The export has the intended runtime, dimensions, frame
 rate, and audio, with aligned transitions and intelligible speech.
 
-### 6. Review and revise the complete video
+### 7. Review and revise the complete video
 
 Generate a contact sheet and scene navigation from the rendered export. Watch
 and listen end to end, then inspect transition boundaries and the final seconds
@@ -130,9 +175,12 @@ unchanged scenes and rebuild only affected assets before assembling the full
 export. Replace audio without re-encoding video only when visuals and timing
 are unchanged and the existing export still matches the project.
 
-Deliver the MP4, review aids, editable copy/timeline, original assets, animation
-sources, and rebuild commands with prerequisites. Report what was actually
-verified and any viewing or listening checks that still need the user.
+Deliver the MP4 as the primary output and present it so the user can watch it
+directly, as an inline player or a path to open. Keep review aids, the
+storyboard, original assets, animation sources, and rebuild commands with
+prerequisites in the project rather than bundling them into an archive. Report
+what was actually verified and any viewing or listening checks that still need
+the user.
 
 **Success criteria:** The complete video meets the brief and can be revised
 without reconstructing the project.
