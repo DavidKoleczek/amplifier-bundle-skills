@@ -3,9 +3,9 @@ name: create-demo-video
 description: >-
   Produce a narrated demo video that shows something the user made or built,
   cut from recordings they supply or recordings made to their direction. Use
-  when showing a product, feature, tool, or project in action. Not for
-  slide-style explainers; for a single trim or audio cleanup, use the relevant
-  tool directly.
+  when showing a product, feature, tool, or project in action, including
+  explainers built around a live demo. Not for slide-style explainers; for a
+  single trim or audio cleanup, use the relevant tool directly.
 ---
 
 # Create a Demo Video
@@ -110,11 +110,14 @@ show. Long, unedited captures are fine; step 4 cuts them down. Make recordings
 with real screen capture of the thing running, using Showrun for web apps and
 its terminal mode for command-line demos. Seed realistic demo data first so
 screens do not start empty. Record a trial take before the real one, especially
-when a take spends money or time. Use Showrun's receipts, which time each action
-and wait, to choose cut points. Only substitute simulated or animated footage
-when the user explicitly asks not to use real screen capture. If a storyboard
-beat cannot be recorded because the thing lacks it, tell the user rather than
-faking it.
+when a take spends money or time. Start each take with the screen and scrollback
+cleared, keep terminal takes to one or two commands, and check the receipt that
+every step shows a first interaction. Use Showrun's receipts, which time each
+action and wait, to choose cut points. Share takes with the user through
+Showrun's review dashboard before cutting them. Only substitute simulated or
+animated footage when the user explicitly asks not to use real screen capture.
+If a storyboard beat cannot be recorded because the thing lacks it, tell the
+user rather than faking it.
 
 **Success criteria:** Every demo scene in the storyboard maps to a recording
 that shows it happening.
@@ -167,7 +170,9 @@ jobs the harness may kill.
 Retain editable source and dependencies. Make narrow text, alignment, and timing
 changes there instead of regenerating the animation. Recompute cues when speech
 changes. Inspect encoded frames at reveals, transitions, and the ending for
-collisions, misleading arrows, small text, and blank frames.
+collisions, misleading arrows, small text, and blank frames. Share animations
+with the user through Unfold's dashboard and apply their notes with Unfold's
+refinement before assembly.
 
 **Success criteria:** The animation matches the narration, remains readable,
 and holds a complete final composition.
@@ -179,8 +184,10 @@ transitions, lay the narration in with vid's audio verbs, and render once.
 Save the plan from `vid plan` with the project so the edit can be reviewed and
 replayed.
 Account for transition overlaps so later narration does not drift; extra
-outgoing footage can compensate for an overlap. Keep audio within the picture's
-duration without cutting speech.
+outgoing footage can compensate for an overlap. A dissolve crossfades audio as
+well as picture, so start each scene's narration after its incoming transition
+ends, or use a hard cut where a line must start immediately. Keep audio within
+the picture's duration without cutting speech.
 
 Mute recording audio only where voiceover replaces it. Where recorded and
 synthetic voices meet, add the handoff to the checks for a person in step 7.
@@ -193,7 +200,11 @@ rate, and audio, with aligned transitions and intelligible speech.
 Run the tool checks yourself: `vid verify` on the render, `aud verify` on the
 final mix, a transcription of the mix compared against the storyboard
 narration, and frames sampled at every scene boundary and in the final seconds.
-Look for black flashes, clipped speech, frozen endings, and abrupt cutoffs.
+Look for black flashes, clipped speech, frozen endings, and abrupt cutoffs. On
+dark palettes, `vid verify --expect-no-black-frames` can flag designed frames;
+confirm with the sampled frames before treating them as a defect. If `aud verify`
+misses the loudness target, master the extracted mix with aud, swap it in with
+`vid audio replace`, and render again; this is the one expected second render.
 Model reviews of picture or sound do not replace a person. List the checks only
 a person can make, such as pacing, voice quality, and whether the demo is
 convincing, as open items in the delivery report.
@@ -206,6 +217,7 @@ Create a local HTML review player for the canonical MP4. Include:
 
 - A video player with playback, seeking, volume, and fullscreen controls.
 - Selectable closed captions, enabled by default when captions are requested.
+  Build the caption file from the storyboard narration and the scene timeline.
 - Scene buttons labeled with each scene's start time and title from the
   storyboard. Clicking a button seeks to that scene and starts playback.
 - Links to download the MP4 and caption file, and to view the storyboard.
