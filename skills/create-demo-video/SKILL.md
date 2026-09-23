@@ -54,7 +54,7 @@ vid for cutting, assembly, and render verification. Read a tool's help before
 its first use. Do not reimplement a tool's work with hand-written FFmpeg
 commands or scripts; use FFmpeg/ffprobe directly only for clip preparation and
 inspection the tools do not cover, and small scripts only to chain tool calls
-into repeatable builds. Supply or create music separately from audio mastering.
+into repeatable builds.
 
 ## Workflow
 
@@ -66,7 +66,7 @@ decisions. Use 1080p at 30 fps unless the brief calls for another format.
 
 Start with a hook, a tour of visible results, a short synthesis, and a closing
 action. Give each demo one spoken point and footage that proves it. Reuse chosen
-branding; otherwise compare a few small layout previews and voice/music samples
+branding; otherwise compare a few small layout previews and voice samples
 before applying a direction throughout.
 
 Build the storyboard in Stories. Use `create-storyboard` to import a script the
@@ -162,9 +162,8 @@ durations to whole frames and account for crossfade overlaps so later narration
 does not drift. Extra outgoing footage can compensate for an overlap. Bound audio
 padding to the picture's duration without cutting speech.
 
-Mute recording audio only where voiceover replaces it. With continuous narration,
-use a steady quiet music bed and a closing fade. Listen to the complete mix,
-including the handoff between recorded and synthetic voices.
+Mute recording audio only where voiceover replaces it. Listen to the complete
+mix, including the handoff between recorded and synthetic voices.
 
 **Success criteria:** The export has the intended runtime, dimensions, frame
 rate, and audio, with aligned transitions and intelligible speech.
