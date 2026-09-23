@@ -161,6 +161,8 @@ and holds a complete final composition.
 
 Build the whole video as one vid pipeline: stitch the scenes with vid
 transitions, lay the narration in with vid's audio verbs, and render once.
+Save the plan from `vid plan` with the project so the edit can be reviewed and
+replayed.
 Account for transition overlaps so later narration does not drift; extra
 outgoing footage can compensate for an overlap. Keep audio within the picture's
 duration without cutting speech.
