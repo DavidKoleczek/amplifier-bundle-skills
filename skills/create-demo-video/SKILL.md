@@ -89,9 +89,7 @@ A direction holds up to eight panels; for a longer video, make each panel a
 section and list its scenes in `visual` and `narration`. Share the storyboard
 through the Stories dashboard so the user can comment or edit, or leave it to
 the agent. Either way it is the source of truth for every later step. Apply
-changes with `revise-storyboard` and rebuild from the latest revision. If
-Stories is unavailable on the platform, write the same fields per scene to
-`storyboard.md`.
+changes with `revise-storyboard` and rebuild from the latest revision.
 
 Use the scene IDs to connect on-screen sources, narration, and review
 timestamps. Preserve original assets, animation source, and generation
